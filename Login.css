@@ -1,0 +1,24 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&family=Nunito:wght@400;700&family=Quicksand:wght@400;700&family=Montserrat:wght@400;700&family=Raleway:wght@400;700&family=Rubik:wght@400;700&family=Noto+Sans+Thai:wght@400;700&display=swap");
+body {
+  margin: 0;
+  font-family: "Poppins", sans-serif; /* ใช้ฟอนต์หลัก */
+}
+.wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #f0f2f5;
+}
+.wrapper1 {
+  background-color: white;
+  border: 2px solid;
+  padding: 60px;
+  border-radius: 18px;
+  box-shadow: 25px 25px 12px rgba(0, 0, 0, 0.1);
+  width: 300px;
+}
+
+input {
+  width: 100%;
+}
