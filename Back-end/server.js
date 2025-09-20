@@ -138,11 +138,87 @@ app.post("/login", async (req, res) => {
     if (connection) await connection.close();
   }
 });
-
 //สิ้นสุดส่วนของ API login
 
-//ส่วนของ API พนักงาน
 
-//................ใส่ API พนักงานตรงนี้...................
+//ส่วนของ API แผนก
+// ดึงข้อมูล DEPARTMENT
+app.get("/DEPARTMENT", async (req, res) => {
+  let connection;
+  try {
+    connection = await oracledb.getConnection();
+    const result = await connection.execute(`SELECT ID, NAME FROM DEPARTMENT`);
+    const DEPARTMENT = result.rows.map((row) => ({ ID: row[0], NAME: row[1] }));
+    res.json(DEPARTMENT);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("DB Error");
+  } finally {
+    if (connection) await connection.close();
+  }
+});
 
-//สิ้นสุดส่วนของ API พนักงาน
+// เพิ่ม DEPARTMENT
+app.post("/DEPARTMENT", async (req, res) => {
+  const { NAME } = req.body;
+  let connection;
+  try {
+    connection = await oracledb.getConnection();
+    const result = await connection.execute(`SELECT MAX(ID) FROM DEPARTMENT`);
+    let newId = "001";
+    if (result.rows[0][0]) {
+      const lastId = result.rows[0][0];
+      newId = (parseInt(lastId) + 1).toString().padStart(3, "0");
+    }
+    await connection.execute(
+      `INSERT INTO DEPARTMENT (ID, NAME) VALUES (:ID, :NAME)`,
+      { ID: newId, NAME },
+      { autoCommit: true }
+    );
+    res.json({ message: "DEPARTMENT inserted successfully!", ID: newId });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("DB Insert Error");
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+
+// อัปเดต DEPARTMENT
+app.put("/DEPARTMENT/:id", async (req, res) => {
+  const { id } = req.params;
+  const { NAME } = req.body;
+  let connection;
+  try {
+    connection = await oracledb.getConnection();
+    await connection.execute(
+      `UPDATE DEPARTMENT SET NAME = :NAME WHERE ID = :ID`,
+      { NAME, ID: id },
+      { autoCommit: true }
+    );
+    res.json({ message: "Updated successfully!" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("DB Update Error");
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+
+// ลบ DEPARTMENT
+app.delete("/DEPARTMENT/:id", async (req, res) => {
+  const { id } = req.params;
+  let connection;
+  try {
+    connection = await oracledb.getConnection();
+    await connection.execute(`DELETE FROM DEPARTMENT WHERE ID = :ID`, { ID: id }, { autoCommit: true });
+    res.json({ message: "Deleted successfully!" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("DB Delete Error");
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+
+//สิ้นสุดส่วนของ API แผนก
