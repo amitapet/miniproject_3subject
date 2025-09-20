@@ -139,6 +139,182 @@ app.post("/login", async (req, res) => {
   }
 });
 
+//ส่วนของ API เพิ่ม ลบ แก้ไข ข้อมูลสถานี
+
+app.get("/stations", async (req, res) => {
+  let connection;
+  try {
+    connection = await oracledb.getConnection();
+    const result = await connection.execute(
+      `SELECT ID, NAME FROM STATION ORDER BY ID`,
+      [],
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    console.log("Query result:", result.rows); // Debug log
+    res.json(result.rows);
+
+  } catch (err) {
+    console.error("GET /stations error:", err);
+    res.status(500).json({ error: "Database query failed", details: err.message });
+  } finally {
+    if (connection) {
+      try {
+        await connection.close();
+      } catch (err) {
+        console.error("Connection close error:", err);
+      }
+    }
+  }
+});
+
+// 🔹 Create stations with auto ID
+app.post("/stations", async (req, res) => {
+  const { NAME } = req.body;
+
+  if (!NAME || NAME.trim() === '') {
+    return res.status(400).json({ error: "Station name is required" });
+  }
+
+  let connection;
+  try {
+    connection = await oracledb.getConnection();
+
+    // 1. Find max current station ID
+    const maxResult = await connection.execute(
+      `SELECT NVL(MAX(ID), 0) as MAX_ID FROM STATION`,
+      [],
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    const newId = (maxResult.rows[0].MAX_ID || 0) + 1;
+    console.log("New ID will be:", newId); // Debug log
+
+    // 2. Insert station
+    const insertResult = await connection.execute(
+      `INSERT INTO STATION (ID, NAME) VALUES (:ID, :NAME)`,
+      { ID: newId, NAME: NAME.trim() },
+      { autoCommit: true }
+    );
+
+    console.log("Insert result:", insertResult); // Debug log
+
+    res.json({
+      message: "Station inserted successfully!",
+      ID: newId,
+      NAME: NAME.trim()
+    });
+
+  } catch (err) {
+    console.error("POST /stations error:", err);
+    res.status(500).json({
+      error: "Database insert failed",
+      details: err.message
+    });
+  } finally {
+    if (connection) {
+      try {
+        await connection.close();
+      } catch (err) {
+        console.error("Connection close error:", err);
+      }
+    }
+  }
+});
+
+// 🔹 Update station
+app.put("/stations/:id", async (req, res) => {
+  const { id } = req.params;
+  const { NAME } = req.body;
+
+  if (!NAME || NAME.trim() === '') {
+    return res.status(400).json({ error: "Station name is required" });
+  }
+
+  let connection;
+  try {
+    connection = await oracledb.getConnection();
+
+    const result = await connection.execute(
+      `UPDATE STATION SET NAME = :NAME WHERE ID = :id`,
+      { NAME: NAME.trim(), id: parseInt(id) },
+      { autoCommit: true }
+    );
+
+    console.log("Update result:", result); // Debug log
+
+    if (result.rowsAffected === 0) {
+      return res.status(404).json({ error: "Station not found" });
+    }
+
+    res.json({ message: "Station updated successfully!" });
+
+  } catch (err) {
+    console.error("PUT /stations/:id error:", err);
+    res.status(500).json({
+      error: "Database update failed",
+      details: err.message
+    });
+  } finally {
+    if (connection) {
+      try {
+        await connection.close();
+      } catch (err) {
+        console.error("Connection close error:", err);
+      }
+    }
+  }
+});
+
+// 🔹 Delete station
+app.delete("/stations/:id", async (req, res) => {
+  const { id } = req.params;
+
+  let connection;
+  try {
+    connection = await oracledb.getConnection();
+
+    const result = await connection.execute(
+      `DELETE FROM STATION WHERE ID = :id`,
+      { id: parseInt(id) },
+      { autoCommit: true }
+    );
+
+    console.log("Delete result:", result); // Debug log
+
+    if (result.rowsAffected === 0) {
+      return res.status(404).json({ error: "Station not found" });
+    }
+
+    res.json({ message: "Station deleted successfully!" });
+
+  } catch (err) {
+    console.error("DELETE /stations/:id error:", err);
+    res.status(500).json({
+      error: "Database delete failed",
+      details: err.message
+    });
+  } finally {
+    if (connection) {
+      try {
+        await connection.close();
+      } catch (err) {
+        console.error("Connection close error:", err);
+      }
+    }
+  }
+});
+
+// Initialize Oracle and start server
+initOracle().then(() => {
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+  });
+});
+
+//สิ้นสุดส่วนของ API เพิ่ม ลบ แก้ไข ข้อมูลสถานี
+
+
 //สิ้นสุดส่วนของ API login
 
 //ส่วนของ API พนักงาน
