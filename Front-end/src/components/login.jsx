@@ -32,10 +32,13 @@ function Login() {
           confirmButtonText: "ตกลง",
         }).then(() => {
           // สมมุติว่า backend ส่ง role กลับมาพร้อม employee
-          if (data.employee?.role === "employee") {
+          if (
+            data.employee?.role === "employee" ||
+            data.employee?.role === "customer"
+          ) {
             navigate("/Sidebar"); // ไปหน้า Dashboard พนักงาน
-          } else if (data.employee?.role === "customer") {
-            navigate("/CusSidebar"); // ไปหน้า Dashboard ลูกค้า
+            // } else if (data.employee?.role === "customer") {
+            //   navigate("/Sidebar"); // ไปหน้า Dashboard ลูกค้า
           } else {
             navigate("/Sidebar"); // ค่า default
           }
