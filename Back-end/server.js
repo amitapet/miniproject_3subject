@@ -106,7 +106,7 @@ app.post("/login", async (req, res) => {
     }
 
     result = await connection.execute(
-      `SELECT ID, USERNAME 
+      `SELECT ID, USERNAME ,FNAME, LNAME
        FROM CUSTOMER 
        WHERE USERNAME = :username AND USER_PASSWORD = :password`,
       [username, password],
