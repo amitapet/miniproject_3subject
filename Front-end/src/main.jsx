@@ -12,13 +12,15 @@ import Roles from "./components/Page/Roles";
 import Employees from "./components/Page/Employees";
 import Departments from "./components/Page/Departments";
 import Reports from "./components/Page/Reports";
-import Login from "./components/Login";
+import Login from "./components/login";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Sidebar from "./components/Sidebar";
 import Profile from "./components/Page/Profile";
 import Workschedule from "./components/Page/Workschedule";
 import Assignment from "./components/Page/Assignment";
 import Currentjob from "./components/Page/Currentjob";
+import Rent from "./components/Page/Rent";
+import RentInfo from "./components/Page/RentInfo";
 
 const router = createBrowserRouter([
   { path: "/", element: <Login /> },
@@ -42,6 +44,8 @@ const router = createBrowserRouter([
   { path: "/work-schedule", element: <Layout><Workschedule /></Layout> },
   { path: "/assignment", element: <Layout><Assignment /></Layout> },
   { path: "/current-job", element: <Layout><Currentjob /></Layout> },
+  { path: "/Rent", element: <Layout><Rent /></Layout> },
+  { path: "/RentInfo", element: <Layout><RentInfo /></Layout> },
 
 ]);
 

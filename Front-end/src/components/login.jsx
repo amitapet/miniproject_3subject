@@ -35,7 +35,7 @@ function Login() {
           if (data.employee?.role === "employee") {
             navigate("/Sidebar"); // ไปหน้า Dashboard พนักงาน
           } else if (data.employee?.role === "customer") {
-            navigate("/Sidebar"); // ไปหน้า Dashboard ลูกค้า
+            navigate("/CusSidebar"); // ไปหน้า Dashboard ลูกค้า
           } else {
             navigate("/Sidebar"); // ค่า default
           }

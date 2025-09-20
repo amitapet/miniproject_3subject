@@ -42,9 +42,6 @@ initOracle().then(() => {
   });
 });
 
-
-
-
 // ส่วนของ API login
 app.post("/login", async (req, res) => {
   const { username, password } = req.body;
@@ -117,11 +114,17 @@ app.post("/login", async (req, res) => {
     );
 
     if (result.rows.length > 0) {
+      const user = result.rows[0];
       return res.json({
         success: true,
         role: "customer",
         message: "✅ Customer login success",
-        customer: result.rows[0],
+        user: {
+          id: user.ID,
+          username: user.USERNAME,
+          name: user.FNAME + " " + user.LNAME,
+          tel: user.TEL,
+        },
       });
     }
 
@@ -138,13 +141,8 @@ app.post("/login", async (req, res) => {
 
 //สิ้นสุดส่วนของ API login
 
-
-
 //ส่วนของ API พนักงาน
 
 //................ใส่ API พนักงานตรงนี้...................
 
 //สิ้นสุดส่วนของ API พนักงาน
-
-
-

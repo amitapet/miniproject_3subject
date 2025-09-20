@@ -22,6 +22,7 @@ function Sidebar() {
   };
 
   const user = JSON.parse(localStorage.getItem("user"));
+  const userid = user?.id || {};
   const permission = user?.permission || {};
 
   return (
@@ -86,7 +87,7 @@ function Sidebar() {
 
         {permission.PROFILE === 1 && (
           <li>
-            <a href="/profile"> 
+            <a href="/profile">
               <FaCar /> โปรไฟล์
             </a>
           </li>
@@ -115,7 +116,22 @@ function Sidebar() {
             </a>
           </li>
         )}
-        
+
+        {userid.substring(0, 1) == "C" && (
+          <li>
+            <a href="/Rent">
+              <FaCar /> จองรอบรถ
+            </a>
+          </li>
+        )}
+
+        {userid.substring(0, 1) == "C" && (
+          <li>
+            <a href="/RentInfo">
+              <FaCar /> รายการจอง
+            </a>
+          </li>
+        )}
       </ul>
 
       <div>
