@@ -1,5 +1,7 @@
 import "./Sidebar.css";
 import { useNavigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { useState } from "react";
 import {
   FaMapMarkerAlt,
   FaRoute,
@@ -10,10 +12,12 @@ import {
   FaBuilding,
   FaChartBar,
   FaSignOutAlt,
+  FaChevronDown,
 } from "react-icons/fa";
 
 function Sidebar() {
   const navigate = useNavigate();
+  const [showReportDropdown, setShowReportDropdown] = useState(false);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -78,10 +82,27 @@ function Sidebar() {
           </li>
         )}
         {permission.VIEWREPORT === 1 && (
-          <li>
-            <a href="/reports">
-              <FaChartBar /> รายงาน
-            </a>
+          <li
+            className="dropdown-item"
+            onMouseEnter={() => setShowReportDropdown(true)}
+            onMouseLeave={() => setShowReportDropdown(false)}
+          >
+            <div className="dropdown-trigger">
+              <FaChartBar /> รายงาน <FaChevronDown className="dropdown-arrow" />
+            </div>
+            {showReportDropdown && (
+              <ul className="dropdown-menu">
+                <li>
+                  <a href="/reports/report1">รายงาน 1</a>
+                </li>
+                <li>
+                  <a href="/reports/report3">รายงาน 3</a>
+                </li>
+                <li>
+                  <a href="/reports/report6">รายงาน 6</a>
+                </li>
+              </ul>
+            )}
           </li>
         )}
 

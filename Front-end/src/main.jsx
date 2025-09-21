@@ -11,7 +11,9 @@ import Schedules from "./components/Page/Schedules";
 import Roles from "./components/Page/Roles";
 import Employees from "./components/Page/Employees";
 import Departments from "./components/Page/Departments";
-import Reports from "./components/Page/Reports";
+import Report1 from './components/Page/Report1';
+import Report3 from './components/Page/Report3';
+import Report6 from './components/Page/Report6';
 import Login from "./components/login";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Sidebar from "./components/Sidebar";
@@ -21,6 +23,7 @@ import Assignment from "./components/Page/Assignment";
 import Currentjob from "./components/Page/Currentjob";
 import Rent from "./components/Page/Rent";
 import RentInfo from "./components/Page/RentInfo";
+
 
 const router = createBrowserRouter([
   { path: "/", element: <Login /> },
@@ -39,7 +42,9 @@ const router = createBrowserRouter([
   { path: "/roles", element: <Layout><Roles /></Layout> },
   { path: "/employees", element: <Layout><Employees /></Layout> },
   { path: "/departments", element: <Layout><Departments /></Layout> },
-  { path: "/reports", element: <Layout><Reports /></Layout> },
+  { path: "/reports/report1", element: <Layout><Report1 /></Layout> },
+  { path: "/reports/report3", element: <Layout><Report3 /></Layout> },
+  { path: "/reports/report6", element: <Layout><Report6 /></Layout> },
   { path: "/profile", element: <Layout><Profile /></Layout> },
   { path: "/work-schedule", element: <Layout><Workschedule /></Layout> },
   { path: "/assignment", element: <Layout><Assignment /></Layout> },
