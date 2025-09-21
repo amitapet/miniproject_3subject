@@ -306,13 +306,6 @@ app.delete("/stations/:id", async (req, res) => {
   }
 });
 
-// Initialize Oracle and start server
-initOracle().then(() => {
-  app.listen(PORT, () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
-  });
-});
-
 //สิ้นสุดส่วนของ API เพิ่ม ลบ แก้ไข ข้อมูลสถานี
 
 
@@ -326,7 +319,10 @@ app.get("/DEPARTMENT", async (req, res) => {
   let connection;
   try {
     connection = await oracledb.getConnection();
-    const result = await connection.execute(`SELECT ID, NAME FROM DEPARTMENT`);
+    const result = await connection.execute(
+      `SELECT ID,
+       NAME FROM DEPARTMENT
+       `);
     const DEPARTMENT = result.rows.map((row) => ({ ID: row[0], NAME: row[1] }));
     res.json(DEPARTMENT);
   } catch (err) {
@@ -401,3 +397,161 @@ app.delete("/DEPARTMENT/:id", async (req, res) => {
 });
 
 //สิ้นสุดส่วนของ API แผนก
+
+//ส่วนของ API พนักงาน
+// ดึงข้อมูลพนักงาน
+app.get("/Employee", async (req, res) => {
+  let connection;
+  try {
+    connection = await oracledb.getConnection();
+    const result = await connection.execute(
+      `SELECT 
+      ID, 
+      FNAME,
+      LNAME,
+      EMAIL,
+      username,
+      password,
+      id_department,
+      id_position FROM employee
+      ORDER BY TO_NUMBER(SUBSTR(ID, 2))`
+    );
+    const Employee = result.rows.map((row) => ({ 
+      ID: row[0], 
+      FNAME: row[1], 
+      LNAME: row[2], 
+      EMAIL: row[3], 
+      username: row[4],
+      password: row[5], 
+      id_department: row[6], 
+      id_position: row[7] }));
+    res.json(Employee);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("DB Error");
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+
+// เพิ่มรหัสพนักงานอัตโนมัติ
+app.post("/Employee", async (req, res) => {
+  const { 
+      FNAME,
+      LNAME,
+      EMAIL,
+      username,
+      password,
+      id_department,
+      id_position } = req.body;
+
+  let connection;
+  
+  try {
+    connection = await oracledb.getConnection();
+    const result = await connection.execute(`SELECT MAX(ID) FROM Employee`);
+    let newId = "E0001";
+    if (result.rows[0][0]) {
+      const lastId = result.rows[0][0];
+       const num = parseInt(lastId.replace("E", "")) + 1;
+      newId = "E" + num.toString().padStart(4, "0");
+    }
+
+    // เพิ่ม Employee
+    await connection.execute(
+      `INSERT INTO Employee (
+      ID,
+      FNAME,
+      LNAME,
+      EMAIL,
+      username,
+      password,
+      id_department,
+      id_position) VALUES (
+      :ID, 
+      :FNAME, 
+      :LNAME, 
+      :EMAIL, 
+      :username, 
+      :password, 
+      :id_department, 
+      :id_position)`,
+      { ID: newId, FNAME, LNAME, EMAIL, username, password, id_department, id_position },
+      { autoCommit: true }
+    );
+    res.json({ message: "Employee inserted successfully!", ID: newId });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("DB Insert Error");
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+
+// อัปเดต Employee
+app.put("/Employee/:id", async (req, res) => {
+  const { id } = req.params;
+    const { 
+      FNAME,
+      LNAME,
+      EMAIL,
+      username,
+      password,
+      id_department,
+      id_position } = req.body;
+  let connection;
+  try {
+    connection = await oracledb.getConnection();
+    await connection.execute(
+      `UPDATE Employee SET FNAME = :FNAME , 
+      LNAME = :LNAME ,
+      EMAIL = :EMAIL ,
+      username = :username , 
+      password = :password , 
+      id_department = :id_department , 
+      id_position = :id_position
+      WHERE ID = :ID`,
+      { FNAME,LNAME,EMAIL,username,password,id_department,id_position, ID: id },
+      { autoCommit: true }
+    );
+    res.json({ message: "Employee Updated successfully!" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("DB Update Error");
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+
+// ลบ Employee
+app.delete("/Employee/:id", async (req, res) => {
+  const { id } = req.params;
+  let connection;
+  try {
+    connection = await oracledb.getConnection();
+    await connection.execute(`DELETE FROM Employee WHERE ID = :ID`, { ID: id }, { autoCommit: true });
+    res.json({ message: "Employee Deleted successfully!" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("DB Delete Error");
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+
+// ดึงข้อมูล POSITION
+app.get("/POSITION", async (req, res) => {
+  let connection;
+  try {
+    connection = await oracledb.getConnection();
+    const result = await connection.execute(`SELECT ID, NAME,idpermission FROM POSITION`);
+    const POSITION = result.rows.map((row) => ({ ID: row[0], NAME: row[1],idpermission: row[2] }));
+    res.json(POSITION);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("DB Error");
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+

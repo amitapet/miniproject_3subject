@@ -1,14 +1,13 @@
-.departments-wrapper {
+.employees-wrapper {
   display: flex;
   min-height: 90vh;
   min-width: 150vh;
   background-color: #ffffff;
   border-radius: 14px;
-  position: relative ;
-
+  position: relative;
 }
 
-.departments-content {
+.employees-content {
   flex: 1;
   padding: 20px;
 }
@@ -18,20 +17,20 @@ h2 {
   color: #05375a;
 }
 
-.department-form {
+.employee-form {
   display: flex;
   gap: 10px;
   margin-bottom: 20px;
 }
 
-.department-form input {
+.employee-form input {
   padding: 8px;
   flex: 1;
   border: 1px solid #ccc;
   border-radius: 4px;
 }
 
-.department-form .btn-submit {
+.employee-form .btn-submit {
   background-color: #05375a;
   color: white;
   border: none;
@@ -40,11 +39,11 @@ h2 {
   cursor: pointer;
 }
 
-.department-form .btn-submit:hover {
+.employee-form .btn-submit:hover {
   background-color: #094d7b;
 }
 
-.department-form .btn-cancel {
+.employee-form .btn-cancel {
   background-color: #ccc;
   border: none;
   padding: 8px 16px;
@@ -52,30 +51,38 @@ h2 {
   cursor: pointer;
 }
 
-.department-form .btn-cancel:hover {
+.employee-form .btn-cancel:hover {
   background-color: #999;
 }
 
-.department-table {
+.employee-table {
   width: 100%;
   border-collapse: collapse;
   background-color: white;
 }
 
-.department-table th,
-.department-table td {
+.employee-table th{
   border: 1px solid #ddd;
   padding: 8px;
   text-align: center;
+  
+  
 }
 
-.department-table th {
+
+.employee-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: center;
+  
+}
+
+.employee-table th {
   background-color: #05375a;
   color: white;
 }
 
 .btn-edit {
-  
   margin-right: 10px;
   background-color: #05375a;
   color: white;
@@ -102,7 +109,6 @@ h2 {
   background-color: #ec6050;
 }
 
-
 .search-wrapper {
   position: relative;
   width: 100%;
@@ -121,29 +127,28 @@ h2 {
   pointer-events: none; 
 }
 
-.department-search {
+.employee-search {
   width: 100%;
   padding: 12px 12px 12px 32px; 
   border: 1px solid #ccc;
   border-radius: 8px;
 }
 
-/* ปุ่มเพิ่ม */
-.btn-add {
+.butn-add {
   padding: 12px 24px;
+  
   background: #05375a;
   color: white;
   border: none;
   border-radius: 8px;
   margin-bottom: 15px;
-  margin-left: 92.4%;
+  margin-left: 91.4%;
   cursor: pointer;
 }
-.btn-add:hover {
+.butn-add:hover {
   background: #094d7b;
 }
 
-/* กล่อง modal */
 .modal-overlay {
   position: absolute;
   top: 0;
@@ -162,6 +167,7 @@ h2 {
   width: 500px;
   box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
   position: relative;
+  
 }
 
 .modal-box h3 {
@@ -174,14 +180,12 @@ h2 {
   margin-bottom: 15px;
   border: 1px solid #ccc;
   border-radius: 4px;
-  
 }
 
 .modal-actions {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  
 }
 
 .modal-actions .btn-submit {
@@ -207,12 +211,79 @@ h2 {
   background-color: #ec6050;
 }
 
+.combo-dep {
+  width: 100%;
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  margin-bottom: 10px;
+}
+
+.combo-pos{
+  width: 100%;
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  margin-bottom: 10px;
+}
+
+
 .input-name {
-  width: 100%;          /* ให้ยืดเต็มกล่อง */
-  max-width: 100%;   /* จำกัดความกว้างสูงสุด */
+  width: 100%;          
+  max-width: 100%;   
   border: 2px solid #05375a;
   padding: 8px;
   border-radius: 4px;
   margin-right: 200px;
-  box-sizing: border-box; /* คุม padding ไม่ให้ดันเกินกรอบ */
+  box-sizing: border-box;
 }
+
+.FNAME{
+  width: 100%;          
+  max-width: 100%;   
+  border: 2px solid #05375a;
+  padding: 8px;
+  border-radius: 4px;
+  margin-right: 200px;
+  box-sizing: border-box;
+}
+.LNAME{
+  width: 100%;          
+  max-width: 100%;   
+  border: 2px solid #05375a;
+  padding: 8px;
+  border-radius: 4px;
+  margin-right: 200px;
+  box-sizing: border-box;
+}
+
+.EMAIL{
+  width: 100%;          
+  max-width: 100%;   
+  border: 2px solid #05375a;
+  padding: 8px;
+  border-radius: 4px;
+  margin-right: 200px;
+  box-sizing: border-box;
+}
+
+.username{
+  width: 100%;          
+  max-width: 100%;   
+  border: 2px solid #05375a;
+  padding: 8px;
+  border-radius: 4px;
+  margin-right: 200px;
+  box-sizing: border-box;
+}
+
+.password{
+  width: 100%;          
+  max-width: 100%;   
+  border: 2px solid #05375a;
+  padding: 8px;
+  border-radius: 4px;
+  margin-right: 200px;
+  box-sizing: border-box;
+}
+

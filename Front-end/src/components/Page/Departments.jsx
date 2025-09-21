@@ -9,7 +9,7 @@ function Departments() {
   const [form, setForm] = useState({ NAME: "" });
   const [editingId, setEditingId] = useState(null);
   const [search, setSearch] = useState("");
-  const [showModal, setShowModal] = useState(false); // ✅ state สำหรับเปิด/ปิด modal
+  const [showModal, setShowModal] = useState(false); // สำหรับเปิด/ปิด modal
 
   // โหลดข้อมูลแผนก
   const fetchDepartments = async () => {
@@ -111,7 +111,7 @@ function Departments() {
             <tr>
               <th>ID</th>
               <th>ชื่อแผนก</th>
-              <th>จัดการ</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
