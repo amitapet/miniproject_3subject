@@ -1,12 +1,12 @@
 import Sidebar from '../Sidebar';
-function Cars() {
+function Report1() {
     return (
         <>
             <Sidebar />
             <div>
-                <p>เพิ่มจัดการรถ</p>
+                <p>เพิ่มรายงาน</p>
             </div>
         </>
     );
 }
-export default Cars;
+export default Report1;
