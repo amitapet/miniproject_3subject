@@ -139,7 +139,7 @@ function Employees() {
             className="employee-search"
           />
         </div>
-        
+        <div className="scroll">
         <table className="employee-table">
           <thead>
             <tr>
@@ -148,6 +148,8 @@ function Employees() {
               <th>นามสกุล</th>
               <th>Email</th>
               <th>Username</th>
+              <th>ตำแหน่ง</th>
+              <th>แผนก</th>
               <th></th>
             </tr>
           </thead>
@@ -160,6 +162,8 @@ function Employees() {
                   <td>{emp.LNAME}</td>
                   <td>{emp.EMAIL}</td>
                   <td>{emp.username}</td>
+                  <td>{emp.POSITION_NAME}</td>
+                  <td>{emp.DEPARTMENT_NAME}</td>
                   <td>
                     <button className="btn-edit" onClick={() => handleEdit(emp)}>แก้ไข</button>
                     <button className="btn-delete" onClick={() => handleDelete(emp.ID)}>ลบ</button>
@@ -173,6 +177,7 @@ function Employees() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {showModal && (

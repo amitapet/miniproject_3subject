@@ -406,16 +406,22 @@ app.get("/Employee", async (req, res) => {
     connection = await oracledb.getConnection();
     const result = await connection.execute(
       `SELECT 
-      ID, 
-      FNAME,
-      LNAME,
-      EMAIL,
-      username,
-      password,
-      id_department,
-      id_position FROM employee
-      ORDER BY TO_NUMBER(SUBSTR(ID, 2))`
+        emp.ID, 
+        emp.FNAME,
+        emp.LNAME,
+        emp.EMAIL,
+        emp.username,
+        emp.password,
+        emp.id_department,
+        emp.id_position,
+        dep.NAME AS DEPARTMENT_NAME,
+        pos.NAME AS POSITION_NAME
+      FROM Employee emp
+      LEFT JOIN Department dep ON emp.id_department = dep.ID
+      LEFT JOIN Position pos ON emp.id_position = pos.ID
+      ORDER BY TO_NUMBER(SUBSTR( emp.ID, 2))`
     );
+
     const Employee = result.rows.map((row) => ({ 
       ID: row[0], 
       FNAME: row[1], 
@@ -424,7 +430,11 @@ app.get("/Employee", async (req, res) => {
       username: row[4],
       password: row[5], 
       id_department: row[6], 
-      id_position: row[7] }));
+      id_position: row[7],
+      DEPARTMENT_NAME: row[8],
+      POSITION_NAME: row[9]
+    }));
+
     res.json(Employee);
   } catch (err) {
     console.error(err);
@@ -433,7 +443,6 @@ app.get("/Employee", async (req, res) => {
     if (connection) await connection.close();
   }
 });
-
 // เพิ่มรหัสพนักงานอัตโนมัติ
 app.post("/Employee", async (req, res) => {
   const { 

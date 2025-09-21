@@ -106,6 +106,7 @@ function Departments() {
     
 
         {/* ตารางแผนก */}
+        <div className="scroll">
         <table className="department-table">
           <thead>
             <tr>
@@ -139,6 +140,7 @@ function Departments() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* Modal สำหรับเพิ่ม/แก้ไข */}

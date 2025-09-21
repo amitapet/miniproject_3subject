@@ -62,17 +62,24 @@ h2 {
   background-color: white;
 }
 
-.department-table th,
 .department-table td {
   border: 1px solid #ddd;
   padding: 8px;
   text-align: center;
+  
 }
 
 .department-table th {
   background-color: #05375a;
   color: white;
+  padding: 8px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  border: 1px solid #ddd;
 }
+
+
 
 .btn-edit {
   
@@ -215,4 +222,12 @@ h2 {
   border-radius: 4px;
   margin-right: 200px;
   box-sizing: border-box; /* คุม padding ไม่ให้ดันเกินกรอบ */
+}
+
+.scroll {
+  max-height: 500px; 
+  overflow-y: auto;  
+  overflow-x: auto;  
+  border: 1px solid #ddd; 
+  
 }
