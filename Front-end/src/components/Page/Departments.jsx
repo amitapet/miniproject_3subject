@@ -158,7 +158,7 @@ function Departments() {
               />
               <div className="modal-actions">
                 <button type="submit" className="btn-submit">
-                  {editingId ? "บันทึกการแก้ไข" : "เพิ่ม"}
+                  {editingId ? "บันทึกการแก้ไข" : "เพิ่มแผนก"}
                 </button>
                 <button
                   type="button"
