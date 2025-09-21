@@ -15,6 +15,9 @@ function Stations() {
     const [editingId, setEditingId] = useState(null);
     const [showForm, setShowForm] = useState(false);
 
+    //สำหรับ search
+    const [searchTerm, setSearchTerm] = useState("");
+
     // Load stations
     const fetchStations = async () => {
         try {
@@ -44,7 +47,7 @@ function Stations() {
                 Swal.fire("สำเร็จ", "อัปเดตจุดจอดเรียบร้อยแล้ว!", "success");
             } else {
                 // Insert
-                const res = await axios.post("http://localhost:3000/stations", form);
+                await axios.post("http://localhost:3000/stations", form);
                 Swal.fire("สำเร็จ", "เพิ่มจุดจอดเรียบร้อยแล้ว!", "success");
             }
             setForm({ NAME: "" });
@@ -103,6 +106,11 @@ function Stations() {
         setShowForm(false);
     };
 
+    // กรองข้อมูลค้นหา
+    const filteredStations = stations.filter((station) =>
+        station.NAME.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
     return (
         <div className={styles.container}>
             <div className={styles.header}>
@@ -113,6 +121,17 @@ function Stations() {
                 >
                     + เพิ่มจุดจอดใหม่
                 </button>
+            </div>
+
+            {/* Search box */}
+            <div className={styles.searchBox}>
+                <input
+                    type="text"
+                    placeholder="🔍 ค้นหาชื่อจุดจอด..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className={styles.input}
+                />
             </div>
 
             {/* Form Modal/Popup */}
@@ -151,7 +170,7 @@ function Stations() {
 
             {/* Station Cards */}
             <div className={styles.stationGrid}>
-                {stations.map((station, index) => (
+                {filteredStations.map((station, index) => (
                     <div key={station.ID} className={styles.stationCard}>
                         <div className={styles.stationNumber}>
                             {String(index + 1).padStart(2, '0')}
