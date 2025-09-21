@@ -1,0 +1,61 @@
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
+
+// นำเข้า Component
+import Layout from "./components/Layout";
+import Stations from "./components/Page/Stations";
+import Carroutes from "./components/Page/Carroutes";
+import Cars from "./components/Page/Cars";
+import Schedules from "./components/Page/Schedules";
+import Roles from "./components/Page/Roles";
+import Employees from "./components/Page/Employees";
+import Departments from "./components/Page/Departments";
+import Report1 from './components/Page/Report1';
+import Report3 from './components/Page/Report3';
+import Report6 from './components/Page/Report6';
+import Login from "./components/login";
+import ProtectedRoute from "./components/ProtectedRoute";
+import Sidebar from "./components/Sidebar";
+import Profile from "./components/Page/Profile";
+import Workschedule from "./components/Page/Workschedule";
+import Assignment from "./components/Page/Assignment";
+import Currentjob from "./components/Page/Currentjob";
+import Rent from "./components/Page/Rent";
+import RentInfo from "./components/Page/RentInfo";
+
+
+const router = createBrowserRouter([
+  { path: "/", element: <Login /> },
+  {
+    path: "/sidebar",
+    element: (
+      <ProtectedRoute>
+        <Sidebar />
+      </ProtectedRoute>
+    ),
+  },
+  { path: "/stations", element: <Layout><Stations /></Layout> },
+  { path: "/carroutes", element: <Layout><Carroutes /></Layout> },
+  { path: "/cars", element: <Layout><Cars /></Layout> },
+  { path: "/schedules", element: <Layout><Schedules /></Layout> },
+  { path: "/roles", element: <Layout><Roles /></Layout> },
+  { path: "/employees", element: <Layout><Employees /></Layout> },
+  { path: "/departments", element: <Layout><Departments /></Layout> },
+  { path: "/reports/report1", element: <Layout><Report1 /></Layout> },
+  { path: "/reports/report3", element: <Layout><Report3 /></Layout> },
+  { path: "/reports/report6", element: <Layout><Report6 /></Layout> },
+  { path: "/profile", element: <Layout><Profile /></Layout> },
+  { path: "/work-schedule", element: <Layout><Workschedule /></Layout> },
+  { path: "/assignment", element: <Layout><Assignment /></Layout> },
+  { path: "/current-job", element: <Layout><Currentjob /></Layout> },
+  { path: "/Rent", element: <Layout><Rent /></Layout> },
+  { path: "/RentInfo", element: <Layout><RentInfo /></Layout> },
+
+]);
+
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <React.StrictMode>
+    <RouterProvider router={router} />
+  </React.StrictMode>
+);
