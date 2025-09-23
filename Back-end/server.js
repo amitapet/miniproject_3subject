@@ -154,10 +154,11 @@ app.get("/stations", async (req, res) => {
 
     console.log("Query result:", result.rows); // Debug log
     res.json(result.rows);
-
   } catch (err) {
     console.error("GET /stations error:", err);
-    res.status(500).json({ error: "Database query failed", details: err.message });
+    res
+      .status(500)
+      .json({ error: "Database query failed", details: err.message });
   } finally {
     if (connection) {
       try {
@@ -173,7 +174,7 @@ app.get("/stations", async (req, res) => {
 app.post("/stations", async (req, res) => {
   const { NAME } = req.body;
 
-  if (!NAME || NAME.trim() === '') {
+  if (!NAME || NAME.trim() === "") {
     return res.status(400).json({ error: "Station name is required" });
   }
 
@@ -203,14 +204,13 @@ app.post("/stations", async (req, res) => {
     res.json({
       message: "Station inserted successfully!",
       ID: newId,
-      NAME: NAME.trim()
+      NAME: NAME.trim(),
     });
-
   } catch (err) {
     console.error("POST /stations error:", err);
     res.status(500).json({
       error: "Database insert failed",
-      details: err.message
+      details: err.message,
     });
   } finally {
     if (connection) {
@@ -228,7 +228,7 @@ app.put("/stations/:id", async (req, res) => {
   const { id } = req.params;
   const { NAME } = req.body;
 
-  if (!NAME || NAME.trim() === '') {
+  if (!NAME || NAME.trim() === "") {
     return res.status(400).json({ error: "Station name is required" });
   }
 
@@ -249,12 +249,11 @@ app.put("/stations/:id", async (req, res) => {
     }
 
     res.json({ message: "Station updated successfully!" });
-
   } catch (err) {
     console.error("PUT /stations/:id error:", err);
     res.status(500).json({
       error: "Database update failed",
-      details: err.message
+      details: err.message,
     });
   } finally {
     if (connection) {
@@ -288,12 +287,11 @@ app.delete("/stations/:id", async (req, res) => {
     }
 
     res.json({ message: "Station deleted successfully!" });
-
   } catch (err) {
     console.error("DELETE /stations/:id error:", err);
     res.status(500).json({
       error: "Database delete failed",
-      details: err.message
+      details: err.message,
     });
   } finally {
     if (connection) {
@@ -308,11 +306,6 @@ app.delete("/stations/:id", async (req, res) => {
 
 //สิ้นสุดส่วนของ API เพิ่ม ลบ แก้ไข ข้อมูลสถานี
 
-
-
-
-
-
 //ส่วนของ API แผนก
 // ดึงข้อมูล DEPARTMENT
 app.get("/DEPARTMENT", async (req, res) => {
@@ -322,7 +315,8 @@ app.get("/DEPARTMENT", async (req, res) => {
     const result = await connection.execute(
       `SELECT ID,
        NAME FROM DEPARTMENT
-       `);
+       `
+    );
     const DEPARTMENT = result.rows.map((row) => ({ ID: row[0], NAME: row[1] }));
     res.json(DEPARTMENT);
   } catch (err) {
@@ -386,7 +380,11 @@ app.delete("/DEPARTMENT/:id", async (req, res) => {
   let connection;
   try {
     connection = await oracledb.getConnection();
-    await connection.execute(`DELETE FROM DEPARTMENT WHERE ID = :ID`, { ID: id }, { autoCommit: true });
+    await connection.execute(
+      `DELETE FROM DEPARTMENT WHERE ID = :ID`,
+      { ID: id },
+      { autoCommit: true }
+    );
     res.json({ message: "Deleted successfully!" });
   } catch (err) {
     console.error(err);
@@ -422,17 +420,17 @@ app.get("/Employee", async (req, res) => {
       ORDER BY TO_NUMBER(SUBSTR( emp.ID, 2))`
     );
 
-    const Employee = result.rows.map((row) => ({ 
-      ID: row[0], 
-      FNAME: row[1], 
-      LNAME: row[2], 
-      EMAIL: row[3], 
+    const Employee = result.rows.map((row) => ({
+      ID: row[0],
+      FNAME: row[1],
+      LNAME: row[2],
+      EMAIL: row[3],
       username: row[4],
-      password: row[5], 
-      id_department: row[6], 
+      password: row[5],
+      id_department: row[6],
       id_position: row[7],
       DEPARTMENT_NAME: row[8],
-      POSITION_NAME: row[9]
+      POSITION_NAME: row[9],
     }));
 
     res.json(Employee);
@@ -445,24 +443,25 @@ app.get("/Employee", async (req, res) => {
 });
 // เพิ่มรหัสพนักงานอัตโนมัติ
 app.post("/Employee", async (req, res) => {
-  const { 
-      FNAME,
-      LNAME,
-      EMAIL,
-      username,
-      password,
-      id_department,
-      id_position } = req.body;
+  const {
+    FNAME,
+    LNAME,
+    EMAIL,
+    username,
+    password,
+    id_department,
+    id_position,
+  } = req.body;
 
   let connection;
-  
+
   try {
     connection = await oracledb.getConnection();
     const result = await connection.execute(`SELECT MAX(ID) FROM Employee`);
     let newId = "E0001";
     if (result.rows[0][0]) {
       const lastId = result.rows[0][0];
-       const num = parseInt(lastId.replace("E", "")) + 1;
+      const num = parseInt(lastId.replace("E", "")) + 1;
       newId = "E" + num.toString().padStart(4, "0");
     }
 
@@ -485,7 +484,16 @@ app.post("/Employee", async (req, res) => {
       :password, 
       :id_department, 
       :id_position)`,
-      { ID: newId, FNAME, LNAME, EMAIL, username, password, id_department, id_position },
+      {
+        ID: newId,
+        FNAME,
+        LNAME,
+        EMAIL,
+        username,
+        password,
+        id_department,
+        id_position,
+      },
       { autoCommit: true }
     );
     res.json({ message: "Employee inserted successfully!", ID: newId });
@@ -500,14 +508,15 @@ app.post("/Employee", async (req, res) => {
 // อัปเดต Employee
 app.put("/Employee/:id", async (req, res) => {
   const { id } = req.params;
-    const { 
-      FNAME,
-      LNAME,
-      EMAIL,
-      username,
-      password,
-      id_department,
-      id_position } = req.body;
+  const {
+    FNAME,
+    LNAME,
+    EMAIL,
+    username,
+    password,
+    id_department,
+    id_position,
+  } = req.body;
   let connection;
   try {
     connection = await oracledb.getConnection();
@@ -520,7 +529,16 @@ app.put("/Employee/:id", async (req, res) => {
       id_department = :id_department , 
       id_position = :id_position
       WHERE ID = :ID`,
-      { FNAME,LNAME,EMAIL,username,password,id_department,id_position, ID: id },
+      {
+        FNAME,
+        LNAME,
+        EMAIL,
+        username,
+        password,
+        id_department,
+        id_position,
+        ID: id,
+      },
       { autoCommit: true }
     );
     res.json({ message: "Employee Updated successfully!" });
@@ -538,7 +556,11 @@ app.delete("/Employee/:id", async (req, res) => {
   let connection;
   try {
     connection = await oracledb.getConnection();
-    await connection.execute(`DELETE FROM Employee WHERE ID = :ID`, { ID: id }, { autoCommit: true });
+    await connection.execute(
+      `DELETE FROM Employee WHERE ID = :ID`,
+      { ID: id },
+      { autoCommit: true }
+    );
     res.json({ message: "Employee Deleted successfully!" });
   } catch (err) {
     console.error(err);
@@ -553,8 +575,14 @@ app.get("/POSITION", async (req, res) => {
   let connection;
   try {
     connection = await oracledb.getConnection();
-    const result = await connection.execute(`SELECT ID, NAME,idpermission FROM POSITION`);
-    const POSITION = result.rows.map((row) => ({ ID: row[0], NAME: row[1],idpermission: row[2] }));
+    const result = await connection.execute(
+      `SELECT ID, NAME,idpermission FROM POSITION`
+    );
+    const POSITION = result.rows.map((row) => ({
+      ID: row[0],
+      NAME: row[1],
+      idpermission: row[2],
+    }));
     res.json(POSITION);
   } catch (err) {
     console.error(err);
@@ -563,8 +591,6 @@ app.get("/POSITION", async (req, res) => {
     if (connection) await connection.close();
   }
 });
-
-
 
 //ส่วนของ API การจัดการเส้นทางรถ
 
@@ -584,12 +610,11 @@ app.get("/stations", async (req, res) => {
     console.log(`✅ Found ${result.rows.length} stations`);
     console.log("Stations:", result.rows);
     res.json(result.rows);
-
   } catch (err) {
     console.error("❌ GET /stations error:", err);
     res.status(500).json({
       error: "Database query failed",
-      details: err.message
+      details: err.message,
     });
   } finally {
     if (connection) {
@@ -617,12 +642,11 @@ app.get("/carroutes", async (req, res) => {
 
     console.log(`✅ Found ${result.rows.length} routes`);
     res.json(result.rows);
-
   } catch (err) {
     console.error("❌ GET /carroutes error:", err);
     res.status(500).json({
       error: "Database query failed",
-      details: err.message
+      details: err.message,
     });
   } finally {
     if (connection) {
@@ -685,29 +709,30 @@ app.post("/carroutes", async (req, res) => {
       { autoCommit: true }
     );
 
-    console.log(`✅ Route inserted successfully. Rows affected: ${insertResult.rowsAffected}`);
+    console.log(
+      `✅ Route inserted successfully. Rows affected: ${insertResult.rowsAffected}`
+    );
 
     res.json({
       message: "Route created successfully!",
       routeId: routeId,
       stationCount: stations.length,
-      totalTime: totalTime || 0
+      totalTime: totalTime || 0,
     });
-
   } catch (err) {
     console.error("❌ POST /carroutes error:", err);
 
     // Check if it's a duplicate key error
-    if (err.message && err.message.includes('ORA-00001')) {
+    if (err.message && err.message.includes("ORA-00001")) {
       return res.status(400).json({
         error: "Route ID already exists",
-        details: `Route with ID '${routeId}' already exists. Please use a different ID.`
+        details: `Route with ID '${routeId}' already exists. Please use a different ID.`,
       });
     }
 
     res.status(500).json({
       error: "Database insert failed",
-      details: err.message
+      details: err.message,
     });
   } finally {
     if (connection) {
@@ -739,7 +764,7 @@ app.put("/carroutes/:id", async (req, res) => {
       {
         NAME_ROUTE: nameRoute.trim(),
         TOTALSUM_TIME: totalTime || 0,
-        id
+        id,
       },
       { autoCommit: true }
     );
@@ -751,7 +776,9 @@ app.put("/carroutes/:id", async (req, res) => {
     res.json({ message: "Route updated successfully!" });
   } catch (err) {
     console.error("❌ PUT /carroutes/:id error:", err);
-    res.status(500).json({ error: "Database update failed", details: err.message });
+    res
+      .status(500)
+      .json({ error: "Database update failed", details: err.message });
   } finally {
     if (connection) {
       try {
@@ -784,7 +811,9 @@ app.delete("/carroutes/:id", async (req, res) => {
     res.json({ message: "Route deleted successfully!" });
   } catch (err) {
     console.error("❌ DELETE /carroutes/:id error:", err);
-    res.status(500).json({ error: "Database delete failed", details: err.message });
+    res
+      .status(500)
+      .json({ error: "Database delete failed", details: err.message });
   } finally {
     if (connection) {
       try {
@@ -799,12 +828,88 @@ app.delete("/carroutes/:id", async (req, res) => {
 // Error handler
 app.use((err, req, res, next) => {
   console.error("🔥 Unhandled error:", err);
-  res.status(500).json({ error: "Internal server error", details: err.message });
+  res
+    .status(500)
+    .json({ error: "Internal server error", details: err.message });
 });
 
 // 404 handler
 app.use((req, res) => {
   console.log(`❌ 404: ${req.method} ${req.url} not found`);
-  res.status(404).json({ error: `Endpoint ${req.method} ${req.url} not found` });
+  res
+    .status(404)
+    .json({ error: `Endpoint ${req.method} ${req.url} not found` });
 });
 //สิ้นสุดส่วนของ API การจัดการเส้นทางรถ
+
+// ================== API ประเภทรถ ==================
+// ดึงข้อมูลประเภทรถทั้งหมด
+app.get("/TYPE_CAR", async (req, res) => {
+  let connection;
+  try {
+    connection = await oracledb.getConnection(dbConfig);
+    const result = await connection.execute(
+      `SELECT * FROM TYPE_CAR ORDER BY ID`,
+      [],
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+
+// เพิ่มประเภทรถใหม่
+app.post("/TYPE_CAR", async (req, res) => {
+  const { NAME } = req.body;
+  let connection;
+  try {
+    connection = await oracledb.getConnection(dbConfig);
+    // หา id ใหม่ (ID ล่าสุด + 1)
+    const maxResult = await connection.execute(
+      `SELECT NVL(MAX(ID), 0) AS MAX_ID FROM TYPE_CAR`,
+      [],
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+    const newId = Number(maxResult.rows[0].MAX_ID) + 1;
+    await connection.execute(
+      `INSERT INTO TYPE_CAR (ID, NAME) VALUES (:ID, :NAME)`,
+      { ID: newId, NAME },
+      { autoCommit: true }
+    );
+    res.json({
+      message: "TYPE_CAR inserted successfully!",
+      ID: newId,
+      NAME,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+
+// ลบประเภทรถ
+app.delete("/TYPE_CAR/:id", async (req, res) => {
+  const { id } = req.params;
+  let connection;
+  try {
+    connection = await oracledb.getConnection(dbConfig);
+    const result = await connection.execute(
+      `DELETE FROM TYPE_CAR WHERE ID = :id`,
+      { id },
+      { autoCommit: true }
+    );
+    if (result.rowsAffected === 0) {
+      return res.status(404).json({ error: "TYPE_CAR not found" });
+    }
+    res.json({ message: "TYPE_CAR deleted successfully!" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+// ================== สิ้นสุด API ประเภทรถ ==================
