@@ -548,6 +548,8 @@ app.delete("/Employee/:id", async (req, res) => {
   }
 });
 
+//สิ้นสุดส่วนของ API พนักงาน
+
 // ดึงข้อมูล POSITION
 app.get("/POSITION", async (req, res) => {
   let connection;
