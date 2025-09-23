@@ -594,139 +594,66 @@ app.get("/POSITION", async (req, res) => {
   }
 });
 
-//สิ้นสุดส่วนของ API พนักงาน
+//ส่วนของ API การจัดการเส้นทางรถ
 
-
-
-// ================== API การจัดการเส้นทางรถ ==================
-// ------------------ GET ------------------
-// GET all stations
-// CREATE new route - แก้ไขแล้ว
-app.post("/carroutes", async (req, res) => {
-  console.log("📝 POST /carroutes request received");
-  console.log("Request body:", JSON.stringify(req.body, null, 2));
-
-  const { id, nameRoute, stations, totalTime } = req.body;
-
-  // Validation
-  if (!nameRoute || nameRoute.trim() === "") {
-    console.log("❌ Validation failed: nameRoute is required");
-    return res.status(400).json({ error: "Route name is required" });
-  }
-
-  if (!stations || !Array.isArray(stations) || stations.length === 0) {
-    console.log("❌ Validation failed: stations are required");
-    return res.status(400).json({ error: "At least one station is required" });
-  }
-
+// GET stations
+app.get("/stations", async (req, res) => {
   let connection;
   try {
-    console.log("🔌 Connecting to database...");
+    console.log("📝 Fetching stations...");
     connection = await oracledb.getConnection(dbConfig);
-    console.log("✅ Database connected");
 
-    let routeId = id && id.trim() ? id.trim() : null;
-
-    // Generate ID if not provided - แก้ไขให้ได้ 3 ตัวอักษรเท่านั้น
-    if (!routeId) {
-      console.log("🔢 Generating new route ID...");
-      const maxResult = await connection.execute(
-        `SELECT NVL(MAX(TO_NUMBER(ID)), 0) AS MAX_ID FROM ROUTE`,
-        [],
-        { outFormat: oracledb.OUT_FORMAT_OBJECT }
-      );
-
-      const nextNumber = maxResult.rows[0].MAX_ID + 1;
-
-      // ตรวจสอบว่าเลขไม่เกิน 999 (เพราะ ID มีขนาด 3 ตัวอักษร)
-      if (nextNumber > 999) {
-        console.log("❌ Maximum route ID reached (999)");
-        return res.status(400).json({
-          error: "Maximum route ID reached",
-          details: "Cannot create more than 999 routes"
-        });
-      }
-
-      routeId = String(nextNumber).padStart(3, "0");
-      console.log(`✅ Generated ID: ${routeId}`);
-    } else {
-      // ตรวจสอบว่า ID ที่ป้อนมามีความยาวไม่เกิน 3 ตัวอักษร
-      if (routeId.length > 3) {
-        console.log(`❌ Route ID too long: ${routeId} (max 3 characters)`);
-        return res.status(400).json({
-          error: "Route ID too long",
-          details: "Route ID must be 3 characters or less"
-        });
-      }
-
-      // ถ้า ID สั้นกว่า 3 ตัว ให้เติม 0 ข้างหน้า
-      routeId = routeId.padStart(3, "0");
-    }
-
-    // ตรวจสอบว่า ID นี้มีในฐานข้อมูลแล้วหรือไม่
-    const checkResult = await connection.execute(
-      `SELECT COUNT(*) AS COUNT_ID FROM ROUTE WHERE ID = :ID`,
-      { ID: routeId },
+    const result = await connection.execute(
+      `SELECT ID, NAME FROM STATION ORDER BY ID`,
+      [],
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
 
-    if (checkResult.rows[0].COUNT_ID > 0) {
-      console.log(`❌ Route ID already exists: ${routeId}`);
-      return res.status(400).json({
-        error: "Route ID already exists",
-        details: `Route with ID '${routeId}' already exists. Please use a different ID.`
-      });
-    }
-
-    // Insert Route
-    console.log(`💾 Inserting route with ID: ${routeId}...`);
-    const insertResult = await connection.execute(
-      `INSERT INTO ROUTE (ID, NAME_ROUTE, TOTALSUM_TIME) VALUES (:ID, :NAME_ROUTE, :TOTALSUM_TIME)`,
-      {
-        ID: routeId,
-        NAME_ROUTE: nameRoute.trim(),
-        TOTALSUM_TIME: totalTime || 0,
-      },
-      { autoCommit: true }
-    );
-
-    console.log(`✅ Route inserted successfully. Rows affected: ${insertResult.rowsAffected}`);
-
-    res.json({
-      message: "Route created successfully!",
-      routeId: routeId,
-      stationCount: stations.length,
-      totalTime: totalTime || 0
-    });
-
+    console.log(`✅ Found ${result.rows.length} stations`);
+    console.log("Stations:", result.rows);
+    res.json(result.rows);
   } catch (err) {
-    console.error("❌ POST /carroutes error:", err);
-
-    // Check if it's a duplicate key error
-    if (err.message && err.message.includes('ORA-00001')) {
-      return res.status(400).json({
-        error: "Route ID already exists",
-        details: `Route with ID '${routeId || 'unknown'}' already exists. Please use a different ID.`
-      });
-    }
-
-    // Check if it's a value too large error
-    if (err.message && err.message.includes('ORA-12899')) {
-      return res.status(400).json({
-        error: "Data too large for database column",
-        details: "Please check that all data fits within the allowed column sizes."
-      });
-    }
-
+    console.error("❌ GET /stations error:", err);
     res.status(500).json({
-      error: "Database insert failed",
-      details: err.message
+      error: "Database query failed",
+      details: err.message,
     });
   } finally {
     if (connection) {
       try {
         await connection.close();
-        console.log("🔌 Database connection closed");
+      } catch (closeErr) {
+        console.error("Connection close error:", closeErr);
+      }
+    }
+  }
+});
+
+// GET all routes
+app.get("/carroutes", async (req, res) => {
+  let connection;
+  try {
+    console.log("📝 Fetching routes...");
+    connection = await oracledb.getConnection(dbConfig);
+
+    const result = await connection.execute(
+      `SELECT ID, NAME_ROUTE, TOTALSUM_TIME FROM ROUTE ORDER BY ID`,
+      [],
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    console.log(`✅ Found ${result.rows.length} routes`);
+    res.json(result.rows);
+  } catch (err) {
+    console.error("❌ GET /carroutes error:", err);
+    res.status(500).json({
+      error: "Database query failed",
+      details: err.message,
+    });
+  } finally {
+    if (connection) {
+      try {
+        await connection.close();
       } catch (closeErr) {
         console.error("Connection close error:", closeErr);
       }
@@ -784,29 +711,30 @@ app.post("/carroutes", async (req, res) => {
       { autoCommit: true }
     );
 
-    console.log(`✅ Route inserted successfully. Rows affected: ${insertResult.rowsAffected}`);
+    console.log(
+      `✅ Route inserted successfully. Rows affected: ${insertResult.rowsAffected}`
+    );
 
     res.json({
       message: "Route created successfully!",
       routeId: routeId,
       stationCount: stations.length,
-      totalTime: totalTime || 0
+      totalTime: totalTime || 0,
     });
-
   } catch (err) {
     console.error("❌ POST /carroutes error:", err);
 
     // Check if it's a duplicate key error
-    if (err.message && err.message.includes('ORA-00001')) {
+    if (err.message && err.message.includes("ORA-00001")) {
       return res.status(400).json({
         error: "Route ID already exists",
-        details: `Route with ID '${routeId}' already exists. Please use a different ID.`
+        details: `Route with ID '${routeId}' already exists. Please use a different ID.`,
       });
     }
 
     res.status(500).json({
       error: "Database insert failed",
-      details: err.message
+      details: err.message,
     });
   } finally {
     if (connection) {
@@ -838,7 +766,7 @@ app.put("/carroutes/:id", async (req, res) => {
       {
         NAME_ROUTE: nameRoute.trim(),
         TOTALSUM_TIME: totalTime || 0,
-        id
+        id,
       },
       { autoCommit: true }
     );
@@ -850,7 +778,9 @@ app.put("/carroutes/:id", async (req, res) => {
     res.json({ message: "Route updated successfully!" });
   } catch (err) {
     console.error("❌ PUT /carroutes/:id error:", err);
-    res.status(500).json({ error: "Database update failed", details: err.message });
+    res
+      .status(500)
+      .json({ error: "Database update failed", details: err.message });
   } finally {
     if (connection) {
       try {
@@ -883,7 +813,9 @@ app.delete("/carroutes/:id", async (req, res) => {
     res.json({ message: "Route deleted successfully!" });
   } catch (err) {
     console.error("❌ DELETE /carroutes/:id error:", err);
-    res.status(500).json({ error: "Database delete failed", details: err.message });
+    res
+      .status(500)
+      .json({ error: "Database delete failed", details: err.message });
   } finally {
     if (connection) {
       try {
@@ -894,22 +826,6 @@ app.delete("/carroutes/:id", async (req, res) => {
     }
   }
 });
-
-// Error handler
-app.use((err, req, res, next) => {
-  console.error("Unhandled error:", err);
-  res.status(500).json({ error: "Internal server error", details: err.message });
-});
-
-// 404 handler
-app.use((req, res) => {
-  console.log(`❌ 404: ${req.method} ${req.url} not found`);
-  res.status(404).json({ error: `Endpoint ${req.method} ${req.url} not found` });
-});
-
-//สิ้นสุดส่วนของ API การจัดการเส้นทางรถ
-
-
 
 // ================== API ประเภทรถ ==================
 // ดึงข้อมูลประเภทรถทั้งหมด
@@ -1082,4 +998,400 @@ app.use((req, res) => {
     .status(404)
     .json({ error: `Endpoint ${req.method} ${req.url} not found` });
 });
+//สิ้นสุดส่วนของ API การจัดการเส้นทางรถ
+
+
+// ================== API การจัดการเส้นทางรถ ==================
+// GET all routes
+
+app.get("/carroutes", async (req, res) => {
+
+  let connection;
+
+  try {
+
+    console.log("📝 Fetching routes...");
+
+    connection = await oracledb.getConnection(dbConfig);
+
+
+
+    const result = await connection.execute(
+
+      `SELECT ID, NAME_ROUTE, TOTALSUM_TIME FROM ROUTE ORDER BY ID`,
+
+      [],
+
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+
+    );
+
+
+
+    console.log(`✅ Found ${result.rows.length} routes`);
+
+    res.json(result.rows);
+
+
+
+  } catch (err) {
+
+    console.error("❌ GET /carroutes error:", err);
+
+    res.status(500).json({
+
+      error: "Database query failed",
+
+      details: err.message
+
+    });
+
+  } finally {
+
+    if (connection) {
+
+      try {
+
+        await connection.close();
+
+      } catch (closeErr) {
+
+        console.error("Connection close error:", closeErr);
+
+      }
+
+    }
+
+  }
+
+});
+
+
+
+// CREATE new route
+
+app.post("/carroutes", async (req, res) => {
+
+  console.log("📝 POST /carroutes request received");
+
+  console.log("Request body:", JSON.stringify(req.body, null, 2));
+
+
+
+  const { id, nameRoute, stations, totalTime } = req.body;
+
+
+
+  // Validation
+
+  if (!nameRoute || nameRoute.trim() === "") {
+
+    console.log("❌ Validation failed: nameRoute is required");
+
+    return res.status(400).json({ error: "Route name is required" });
+
+  }
+
+
+
+  if (!stations || !Array.isArray(stations) || stations.length === 0) {
+
+    console.log("❌ Validation failed: stations are required");
+
+    return res.status(400).json({ error: "At least one station is required" });
+
+  }
+
+
+
+  let connection;
+
+  try {
+
+    console.log("🔌 Connecting to database...");
+
+    connection = await oracledb.getConnection(dbConfig);
+
+    console.log("✅ Database connected");
+
+
+
+    let routeId = id && id.trim() ? id.trim() : null;
+
+
+
+    // Generate ID if not provided
+
+    if (!routeId) {
+
+      console.log("🔢 Generating new route ID...");
+
+      const maxResult = await connection.execute(
+
+        `SELECT NVL(MAX(TO_NUMBER(ID)), 0) AS MAX_ID FROM ROUTE`,
+
+        [],
+
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+
+      );
+
+      routeId = String(maxResult.rows[0].MAX_ID + 1).padStart(3, "0");
+
+      console.log(`✅ Generated ID: ${routeId}`);
+
+    }
+
+
+
+    // Insert Route
+
+    console.log("💾 Inserting route...");
+
+    const insertResult = await connection.execute(
+
+      `INSERT INTO ROUTE (ID, NAME_ROUTE, TOTALSUM_TIME) VALUES (:ID, :NAME_ROUTE, :TOTALSUM_TIME)`,
+
+      {
+
+        ID: routeId,
+
+        NAME_ROUTE: nameRoute.trim(),
+
+        TOTALSUM_TIME: totalTime || 0,
+
+      },
+
+      { autoCommit: true }
+
+    );
+
+
+
+    console.log(`✅ Route inserted successfully. Rows affected: ${insertResult.rowsAffected}`);
+
+
+
+    res.json({
+
+      message: "Route created successfully!",
+
+      routeId: routeId,
+
+      stationCount: stations.length,
+
+      totalTime: totalTime || 0
+
+    });
+
+
+
+  } catch (err) {
+
+    console.error("❌ POST /carroutes error:", err);
+
+
+
+    // Check if it's a duplicate key error
+
+    if (err.message && err.message.includes('ORA-00001')) {
+
+      return res.status(400).json({
+
+        error: "Route ID already exists",
+
+        details: `Route with ID '${routeId}' already exists. Please use a different ID.`
+
+      });
+
+    }
+
+
+
+    res.status(500).json({
+
+      error: "Database insert failed",
+
+      details: err.message
+
+    });
+
+  } finally {
+
+    if (connection) {
+
+      try {
+
+        await connection.close();
+
+        console.log("🔌 Database connection closed");
+
+      } catch (closeErr) {
+
+        console.error("Connection close error:", closeErr);
+
+      }
+
+    }
+
+  }
+
+});
+
+
+
+// UPDATE route
+
+app.put("/carroutes/:id", async (req, res) => {
+
+  const { id } = req.params;
+
+  const { nameRoute, totalTime } = req.body;
+
+
+
+  if (!nameRoute || nameRoute.trim() === "") {
+
+    return res.status(400).json({ error: "Route name is required" });
+
+  }
+
+
+
+  let connection;
+
+  try {
+
+    connection = await oracledb.getConnection(dbConfig);
+
+
+
+    const result = await connection.execute(
+
+      `UPDATE ROUTE SET NAME_ROUTE = :NAME_ROUTE, TOTALSUM_TIME = :TOTALSUM_TIME WHERE ID = :id`,
+
+      {
+
+        NAME_ROUTE: nameRoute.trim(),
+
+        TOTALSUM_TIME: totalTime || 0,
+
+        id
+
+      },
+
+      { autoCommit: true }
+
+    );
+
+
+
+    if (result.rowsAffected === 0) {
+
+      return res.status(404).json({ error: "Route not found" });
+
+    }
+
+
+
+    res.json({ message: "Route updated successfully!" });
+
+  } catch (err) {
+
+    console.error("❌ PUT /carroutes/:id error:", err);
+
+    res.status(500).json({ error: "Database update failed", details: err.message });
+
+  } finally {
+
+    if (connection) {
+
+      try {
+
+        await connection.close();
+
+      } catch (closeErr) {
+
+        console.error("Connection close error:", closeErr);
+
+      }
+
+    }
+
+  }
+
+});
+
+
+
+// DELETE route
+
+app.delete("/carroutes/:id", async (req, res) => {
+
+  const { id } = req.params;
+
+
+
+  let connection;
+
+  try {
+
+    connection = await oracledb.getConnection(dbConfig);
+
+
+
+    const result = await connection.execute(
+
+      `DELETE FROM ROUTE WHERE ID = :id`,
+
+      { id },
+
+      { autoCommit: true }
+
+    );
+
+
+
+    if (result.rowsAffected === 0) {
+
+      return res.status(404).json({ error: "Route not found" });
+
+    }
+
+
+
+    res.json({ message: "Route deleted successfully!" });
+
+  } catch (err) {
+
+    console.error("❌ DELETE /carroutes/:id error:", err);
+
+    res.status(500).json({ error: "Database delete failed", details: err.message });
+  } finally {
+    if (connection) {
+      try {
+        await connection.close();
+      } catch (closeErr) {
+        console.error("Connection close error:", closeErr);
+      }
+    }
+  }
+});
+
+
+// Error handler
+app.use((err, req, res, next) => {
+  console.error("Unhandled error:", err);
+  res.status(500).json({ error: "Internal server error", details: err.message });
+});
+
+// 404 handler
+app.use((req, res) => {
+
+  console.log(`❌ 404: ${req.method} ${req.url} not found`);
+
+  res.status(404).json({ error: `Endpoint ${req.method} ${req.url} not found` });
+
+});
+
 //สิ้นสุดส่วนของ API การจัดการเส้นทางรถ
