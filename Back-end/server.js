@@ -825,23 +825,6 @@ app.delete("/carroutes/:id", async (req, res) => {
   }
 });
 
-// Error handler
-app.use((err, req, res, next) => {
-  console.error("🔥 Unhandled error:", err);
-  res
-    .status(500)
-    .json({ error: "Internal server error", details: err.message });
-});
-
-// 404 handler
-app.use((req, res) => {
-  console.log(`❌ 404: ${req.method} ${req.url} not found`);
-  res
-    .status(404)
-    .json({ error: `Endpoint ${req.method} ${req.url} not found` });
-});
-//สิ้นสุดส่วนของ API การจัดการเส้นทางรถ
-
 // ================== API ประเภทรถ ==================
 // ดึงข้อมูลประเภทรถทั้งหมด
 app.get("/TYPE_CAR", async (req, res) => {
@@ -912,4 +895,105 @@ app.delete("/TYPE_CAR/:id", async (req, res) => {
     if (connection) await connection.close();
   }
 });
-// ================== สิ้นสุด API ประเภทรถ ==================
+
+// ดึงรถทั้งหมด
+app.get("/CARS", async (req, res) => {
+  let connection;
+  try {
+    connection = await oracledb.getConnection(dbConfig);
+    const result = await connection.execute(
+      `SELECT C.ID, C.SEAT, T.ID AS TYPE_ID, T.NAME AS TYPE_NAME
+   FROM CAR C
+   JOIN TYPE_CAR T ON C.ID_TYPECAR = T.ID`,
+      [],
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+
+// เพิ่มรถ
+app.post("/CARS", async (req, res) => {
+  const { ID, SEAT, ID_TYPECAR } = req.body;
+  let connection;
+  try {
+    connection = await oracledb.getConnection(dbConfig);
+    await connection.execute(
+      `INSERT INTO CAR (ID, SEAT, ID_TYPECAR) VALUES (:ID, :SEAT, :ID_TYPECAR)`,
+      { ID, SEAT, ID_TYPECAR },
+      { autoCommit: true }
+    );
+    res.json({ message: "CAR inserted successfully!", ID, SEAT, ID_TYPECAR });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+
+// แก้ไขรถ
+app.put("/CARS/:id", async (req, res) => {
+  const { id } = req.params;
+  const { SEAT, ID_TYPECAR } = req.body;
+  let connection;
+  try {
+    connection = await oracledb.getConnection(dbConfig);
+    await connection.execute(
+      `UPDATE CAR SET SEAT = :SEAT, ID_TYPECAR = :ID_TYPECAR WHERE ID = :id`,
+      { SEAT, ID_TYPECAR, id },
+      { autoCommit: true }
+    );
+    res.json({
+      message: "CAR updated successfully!",
+      id,
+      SEAT,
+      ID_TYPECAR,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+
+// ลบรถ
+app.delete("/CARS/:id", async (req, res) => {
+  const { id } = req.params;
+  let connection;
+  try {
+    connection = await oracledb.getConnection(dbConfig);
+    await connection.execute(
+      `DELETE FROM CAR WHERE ID = :id`,
+      { id },
+      { autoCommit: true }
+    );
+    res.json({ message: "CAR deleted successfully!" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+
+// Error handler
+app.use((err, req, res, next) => {
+  console.error("🔥 Unhandled error:", err);
+  res
+    .status(500)
+    .json({ error: "Internal server error", details: err.message });
+});
+
+// 404 handler
+app.use((req, res) => {
+  console.log(`❌ 404: ${req.method} ${req.url} not found`);
+  res
+    .status(404)
+    .json({ error: `Endpoint ${req.method} ${req.url} not found` });
+});
+//สิ้นสุดส่วนของ API การจัดการเส้นทางรถ

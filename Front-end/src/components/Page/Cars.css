@@ -171,15 +171,12 @@ h2 {
 }
 
 .type-form-wrapper button {
-  padding: 10px 14px;
-  border-radius: 8px;
   background-color: #05375a;
   color: white;
   border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 16px;
-  min-width: 60px;
-  transition: background 0.2s;
 }
 
 .type-form-wrapper button:hover {

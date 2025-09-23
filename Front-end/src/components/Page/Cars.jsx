@@ -48,9 +48,9 @@ function Cars() {
       const res = await axios.get("http://localhost:3000/CARS");
       const mapped = res.data.map((car) => ({
         ID: car.ID,
-        LICENSE: car.LICENSE || car.ID || "",
-        TYPE: car.TYPE || car.TYPE_NAME || "",
-        SEATS: car.SEATS || car.SEAT || "",
+        LICENSE: car.ID,
+        TYPE: car.TYPE_NAME,
+        SEATS: car.SEAT,
       }));
       setCars(mapped);
     } catch (err) {
@@ -212,7 +212,7 @@ function Cars() {
       {showModal && (
         <div className="modal-overlay">
           <div className="modal-box">
-            <h3>{editingId ? "แก้ไขข้อมูลรถ" : "เพิ่มทะเบียนรถและประเภทรถ"}</h3>
+            <h3>{editingId ? "แก้ไขข้อมูลรถ" : "เพิ่มประเภท"}</h3>
 
             {/* ฟอร์มเพิ่มประเภทรถ */}
             <form onSubmit={handleTypeFormSubmit} className="type-form-wrapper">
@@ -224,7 +224,9 @@ function Cars() {
                 onChange={handleTypeFormChange}
                 required
               />
-              <button type="submit">เพิ่ม</button>
+              <button type="button" className="btn-submit">
+                เพิ่ม
+              </button>
             </form>
 
             {/* Dropdown ลบประเภทรถ */}
@@ -254,6 +256,7 @@ function Cars() {
               </button>
             </div>
 
+            <h3>{editingId ? "" : "เพิ่มทะเบียนรถ"}</h3>
             {/* ฟอร์มหลักเพิ่ม/แก้ไขรถ */}
             <form onSubmit={handleSubmit} className="modal-form">
               <div className="input-group">
