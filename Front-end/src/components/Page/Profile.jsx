@@ -9,6 +9,7 @@ function Profile() {
   return (
     <>
       <Sidebar />
+      <title>โปรไฟล์</title>
       <div className="wrapper">
         <p>ชื่อ-นามสกุล : {username}</p>
         <p>อีเมล : {useremail}</p>

@@ -1,0 +1,182 @@
+/* พื้นหลังหน้าหลัก */
+.page-container {
+  min-height: 90vh;
+  min-width: 160vh;
+  background-color: #f2f6fb; /* เทาอ่อน */
+  padding: 24px;
+  font-family: "Tahoma", sans-serif;
+}
+
+/* กล่องค้นหา */
+.search-box {
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 15px;
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  margin-bottom: 24px;
+}
+
+.search-box label {
+  font-size: 14px;
+  padding: 0px 30px;
+}
+
+.search-box select,
+.search-box input {
+  padding: 6px 10px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}
+
+.search-btn {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #1b3b6f;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+/* รายการตารางรถ */
+.schedule-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.schedule-card {
+  background: #1b3b6f;
+  color: #fff;
+  border-radius: 8px;
+  padding: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.schedule-info {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.detail-btn {
+  background: #fff;
+  color: #1b3b6f;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+/* Pagination */
+.pagination {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 14px;
+  color: #333;
+}
+
+.btn-detail {
+  background: white;
+  color: #0d3d91;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+}
+.btn-detail:hover {
+  background: #f0f0f0;
+}
+
+.btn-back {
+  background: #05375a;
+  border-radius: 6px;
+  font-size: 14px;
+  color: white;
+  margin-bottom: 16px;
+  cursor: pointer;
+}
+
+.btn-back:hover {
+  background: #075b94;
+}
+
+.btn-start {
+  background: #2ecc71;
+  color: white;
+  padding: 10px 30px;
+  border-radius: 8px;
+  border: none;
+  margin-top: 100px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.btn-start:hover {
+  background: #27ae60;
+}
+
+.btn-route {
+  background: #365c7e;
+  color: white;
+  padding: 10px 30px;
+  border-radius: 8px;
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+}
+.btn-route:hover {
+  background: #223a50;
+}
+
+/* การ์ดรายละเอียดงาน */
+.job-info-card {
+  background: white;
+  padding: 16px;
+  border-radius: 10px;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.job-info p {
+  margin: 4px;
+  line-height: 2.5vh;
+}
+
+.job-extra {
+  margin-top: 4.1vh;
+}
+
+.job-route p {
+  margin-top: 6vh;
+}
+
+/* ตารางผู้โดยสาร */
+.passenger-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.passenger-table th,
+.passenger-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: center;
+}
+
+.passenger-table th {
+  background: #0d3d91;
+  color: white;
+}
