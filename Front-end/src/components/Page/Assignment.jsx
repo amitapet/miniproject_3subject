@@ -11,13 +11,17 @@ function Assignment() {
   const navigate = useNavigate();
   const [schedules, setSchedules] = useState([]);
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6;
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         const res = await axios.get(
           `http://localhost:3000/assignment/${empId}`
         );
-        setSchedules(res.data); // เอาข้อมูลจาก backend มาใส่ state
+        setSchedules(res.data);
       } catch (err) {
         console.error("❌ Fetch schedules error:", err);
       }
@@ -25,6 +29,14 @@ function Assignment() {
 
     fetchData();
   }, [empId]);
+
+  // คำนวณข้อมูลที่จะโชว์ในหน้าปัจจุบัน
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentSchedules = schedules.slice(indexOfFirstItem, indexOfLastItem);
+
+  // จำนวนหน้าทั้งหมด
+  const totalPages = Math.ceil(schedules.length / itemsPerPage);
 
   return (
     <>
@@ -68,7 +80,7 @@ function Assignment() {
 
         {/* Schedule List */}
         <div className="schedule-list">
-          {schedules.map((s, index) => (
+          {currentSchedules.map((s, index) => (
             <div key={index} className="schedule-card">
               <div className="schedule-info">
                 <div>เส้นทาง : {s.NAME_ROUTE} </div>
@@ -90,7 +102,31 @@ function Assignment() {
         </div>
 
         {/* Pagination */}
-        <div className="pagination">1/10 หน้า</div>
+        <div className="pagination">
+          <button
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage(prev => prev - 1)}
+          >
+            ก่อนหน้า
+          </button>
+
+          {Array.from({ length: totalPages }, (_, i) => (
+            <button
+              key={i}
+              className={currentPage === i + 1 ? "active-page" : ""}
+              onClick={() => setCurrentPage(i + 1)}
+            >
+              {i + 1}
+            </button>
+          ))}
+
+          <button
+            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage(prev => prev + 1)}
+          >
+            ถัดไป
+          </button>
+        </div>
       </div>
     </>
   );

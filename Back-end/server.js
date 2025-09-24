@@ -155,21 +155,19 @@ app.get("/assignment/:empId", async (req, res) => {
 
     const result = await connection.execute(
       `SELECT r.name_route, 
-              t.id, 
-              to_char(t.date_trip,'dd/mm/yyyy') as tripDate, 
-              t.timeout, 
-              t.id_car, 
-              t.id_employee, 
-              ty.name, 
-              COUNT(t.id) AS trip_count
-       FROM trip t
-       LEFT JOIN stop_duration s ON t.id = s.id_trip
-       LEFT JOIN route r ON s.id_route = r.id
-       LEFT JOIN car ON t.id_car = car.id
-       LEFT JOIN type_car ty ON car.id_typecar = ty.id
-       WHERE t.id_employee = :empId
-       GROUP BY r.name_route, t.id, t.date_trip, t.timeout, 
-                t.id_car, t.id_employee, ty.name`,
+        t.id, to_char(t.date_trip,'dd/mm/yyyy') as tripDate, 
+        t.timeout, t.id_car, 
+        t.id_employee, ty.name, 
+        COUNT(t.id) AS trip_count
+      FROM trip t
+      LEFT JOIN stop_duration s ON t.id = s.id_trip
+      LEFT JOIN route r ON s.id_route = r.id
+      LEFT JOIN car ON t.id_car = car.id
+      LEFT JOIN type_car ty ON car.id_typecar = ty.id
+      WHERE t.id_employee = :empId
+      GROUP BY r.name_route, t.id, t.date_trip, t.timeout, 
+        t.id_car, t.id_employee, ty.name
+      ORDER BY t.id`,
       { empId }, // bind parameter
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
