@@ -6,18 +6,25 @@ import { FaSearch } from "react-icons/fa";
 import "./Driver.css";
 
 function Assignment() {
+  const user = JSON.parse(localStorage.getItem("user"));
+  const empId = user?.id || {};
   const navigate = useNavigate();
   const [schedules, setSchedules] = useState([]);
 
   useEffect(() => {
-    // mock data
-    setSchedules([
-      { round: 1, date: "01/01/2568", plate: "สข 2591", time: "9.30-10.30" },
-      { round: 2, date: "01/01/2568", plate: "สข 2592", time: "9.30-10.30" },
-      { round: 3, date: "01/01/2568", plate: "สข 2593", time: "9.30-10.30" },
-      { round: 4, date: "01/01/2568", plate: "สข 2594", time: "9.30-10.30" },
-    ]);
-  }, []);
+    const fetchData = async () => {
+      try {
+        const res = await axios.get(
+          `http://localhost:3000/assignment/${empId}`
+        );
+        setSchedules(res.data); // เอาข้อมูลจาก backend มาใส่ state
+      } catch (err) {
+        console.error("❌ Fetch schedules error:", err);
+      }
+    };
+
+    fetchData();
+  }, [empId]);
 
   return (
     <>
@@ -61,19 +68,20 @@ function Assignment() {
 
         {/* Schedule List */}
         <div className="schedule-list">
-          {schedules.map((s) => (
-            <div key={s.round} className="schedule-card">
+          {schedules.map((s, index) => (
+            <div key={index} className="schedule-card">
               <div className="schedule-info">
-                <div>จาก : ตลาดนัด → ถึง : หน้ามอ</div>
+                <div>เส้นทาง : {s.NAME_ROUTE} </div>
                 <div>
-                  รอบที่ {s.round} วันที่ {s.date} | เวลาที่รถออกและถึงโดยประมาณ{" "}
-                  {s.time}
+                  รอบที่ {s.ID} วันที่ {s.TRIPDATE} | ออกเวลา {s.TIMEOUT}
                 </div>
-                <div>ทะเบียนรถ: {s.plate} | ประเภทรถ: รถตู้</div>
+                <div>
+                  ทะเบียนรถ: {s.ID_CAR} | ประเภทรถ: {s.NAME}
+                </div>
               </div>
               <button
                 className="detail-btn"
-                onClick={() => navigate(`/assignment/${s.round}`)}
+                onClick={() => navigate(`/assignment/${s.ID}`)}
               >
                 รายละเอียด
               </button>

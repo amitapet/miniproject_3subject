@@ -145,6 +145,46 @@ app.post("/login", async (req, res) => {
 });
 //สิ้นสุดส่วนของ API login
 
+// GET assignments
+app.get("/assignment/:empId", async (req, res) => {
+  let connection;
+  try {
+    const empId = req.params.empId; // ดึงค่าจาก URL เช่น /assignment/E0002
+
+    connection = await oracledb.getConnection(dbConfig);
+
+    const result = await connection.execute(
+      `SELECT r.name_route, 
+              t.id, 
+              to_char(t.date_trip,'dd/mm/yyyy') as tripDate, 
+              t.timeout, 
+              t.id_car, 
+              t.id_employee, 
+              ty.name, 
+              COUNT(t.id) AS trip_count
+       FROM trip t
+       LEFT JOIN stop_duration s ON t.id = s.id_trip
+       LEFT JOIN route r ON s.id_route = r.id
+       LEFT JOIN car ON t.id_car = car.id
+       LEFT JOIN type_car ty ON car.id_typecar = ty.id
+       WHERE t.id_employee = :empId
+       GROUP BY r.name_route, t.id, t.date_trip, t.timeout, 
+                t.id_car, t.id_employee, ty.name`,
+      { empId }, // bind parameter
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error("❌ GET /assignment/:empId error:", err);
+    res.status(500).json({ error: "DB Error", details: err.message });
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+
+// end assignment
+
 //ส่วนของ API เพิ่ม ลบ แก้ไข ข้อมูลสถานี
 
 app.get("/stations", async (req, res) => {
