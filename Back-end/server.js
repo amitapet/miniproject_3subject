@@ -55,6 +55,8 @@ app.post("/login", async (req, res) => {
           e.USERNAME,
           e.FNAME,
           e.LNAME,
+          e.EMAIL,
+          d.NAME AS DEPARTMENT_NAME,
           p.NAME AS POSITION_NAME,
           per.MGMT_STATION,
           per.MGMT_ROUTE,
@@ -70,6 +72,7 @@ app.post("/login", async (req, res) => {
           per.CURRENTJOB
    FROM EMPLOYEE e
    JOIN POSITION p ON e.ID_POSITION = p.ID
+   join DEPARTMENT d on e.ID_DEPARTMENT = d.id 
    JOIN PERMISSION per ON p.IDPERMISSION = per.ID
    WHERE e.USERNAME = :username AND e.PASSWORD = :password`,
       [username, password],
@@ -86,6 +89,8 @@ app.post("/login", async (req, res) => {
           id: user.ID,
           username: user.USERNAME,
           name: user.FNAME + " " + user.LNAME,
+          email: user.EMAIL,
+          department: user.DEPARTMENT_NAME,
           position: user.POSITION_NAME,
           permission: {
             MGMT_STATION: user.MGMT_STATION,
@@ -1000,373 +1005,242 @@ app.use((req, res) => {
 });
 //สิ้นสุดส่วนของ API การจัดการเส้นทางรถ
 
-
 // ================== API การจัดการเส้นทางรถ ==================
 // GET all routes
 
 app.get("/carroutes", async (req, res) => {
-
   let connection;
 
   try {
-
     console.log("📝 Fetching routes...");
 
     connection = await oracledb.getConnection(dbConfig);
 
-
-
     const result = await connection.execute(
-
       `SELECT ID, NAME_ROUTE, TOTALSUM_TIME FROM ROUTE ORDER BY ID`,
 
       [],
 
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
-
     );
-
-
 
     console.log(`✅ Found ${result.rows.length} routes`);
 
     res.json(result.rows);
-
-
-
   } catch (err) {
-
     console.error("❌ GET /carroutes error:", err);
 
     res.status(500).json({
-
       error: "Database query failed",
 
-      details: err.message
-
+      details: err.message,
     });
-
   } finally {
-
     if (connection) {
-
       try {
-
         await connection.close();
-
       } catch (closeErr) {
-
         console.error("Connection close error:", closeErr);
-
       }
-
     }
-
   }
-
 });
-
-
 
 // CREATE new route
 
 app.post("/carroutes", async (req, res) => {
-
   console.log("📝 POST /carroutes request received");
 
   console.log("Request body:", JSON.stringify(req.body, null, 2));
 
-
-
   const { id, nameRoute, stations, totalTime } = req.body;
-
-
 
   // Validation
 
   if (!nameRoute || nameRoute.trim() === "") {
-
     console.log("❌ Validation failed: nameRoute is required");
 
     return res.status(400).json({ error: "Route name is required" });
-
   }
 
-
-
   if (!stations || !Array.isArray(stations) || stations.length === 0) {
-
     console.log("❌ Validation failed: stations are required");
 
     return res.status(400).json({ error: "At least one station is required" });
-
   }
-
-
 
   let connection;
 
   try {
-
     console.log("🔌 Connecting to database...");
 
     connection = await oracledb.getConnection(dbConfig);
 
     console.log("✅ Database connected");
 
-
-
     let routeId = id && id.trim() ? id.trim() : null;
-
-
 
     // Generate ID if not provided
 
     if (!routeId) {
-
       console.log("🔢 Generating new route ID...");
 
       const maxResult = await connection.execute(
-
         `SELECT NVL(MAX(TO_NUMBER(ID)), 0) AS MAX_ID FROM ROUTE`,
 
         [],
 
         { outFormat: oracledb.OUT_FORMAT_OBJECT }
-
       );
 
       routeId = String(maxResult.rows[0].MAX_ID + 1).padStart(3, "0");
 
       console.log(`✅ Generated ID: ${routeId}`);
-
     }
-
-
 
     // Insert Route
 
     console.log("💾 Inserting route...");
 
     const insertResult = await connection.execute(
-
       `INSERT INTO ROUTE (ID, NAME_ROUTE, TOTALSUM_TIME) VALUES (:ID, :NAME_ROUTE, :TOTALSUM_TIME)`,
 
       {
-
         ID: routeId,
 
         NAME_ROUTE: nameRoute.trim(),
 
         TOTALSUM_TIME: totalTime || 0,
-
       },
 
       { autoCommit: true }
-
     );
 
-
-
-    console.log(`✅ Route inserted successfully. Rows affected: ${insertResult.rowsAffected}`);
-
-
+    console.log(
+      `✅ Route inserted successfully. Rows affected: ${insertResult.rowsAffected}`
+    );
 
     res.json({
-
       message: "Route created successfully!",
 
       routeId: routeId,
 
       stationCount: stations.length,
 
-      totalTime: totalTime || 0
-
+      totalTime: totalTime || 0,
     });
-
-
-
   } catch (err) {
-
     console.error("❌ POST /carroutes error:", err);
-
-
 
     // Check if it's a duplicate key error
 
-    if (err.message && err.message.includes('ORA-00001')) {
-
+    if (err.message && err.message.includes("ORA-00001")) {
       return res.status(400).json({
-
         error: "Route ID already exists",
 
-        details: `Route with ID '${routeId}' already exists. Please use a different ID.`
-
+        details: `Route with ID '${routeId}' already exists. Please use a different ID.`,
       });
-
     }
 
-
-
     res.status(500).json({
-
       error: "Database insert failed",
 
-      details: err.message
-
+      details: err.message,
     });
-
   } finally {
-
     if (connection) {
-
       try {
-
         await connection.close();
 
         console.log("🔌 Database connection closed");
-
       } catch (closeErr) {
-
         console.error("Connection close error:", closeErr);
-
       }
-
     }
-
   }
-
 });
-
-
 
 // UPDATE route
 
 app.put("/carroutes/:id", async (req, res) => {
-
   const { id } = req.params;
 
   const { nameRoute, totalTime } = req.body;
 
-
-
   if (!nameRoute || nameRoute.trim() === "") {
-
     return res.status(400).json({ error: "Route name is required" });
-
   }
-
-
 
   let connection;
 
   try {
-
     connection = await oracledb.getConnection(dbConfig);
 
-
-
     const result = await connection.execute(
-
       `UPDATE ROUTE SET NAME_ROUTE = :NAME_ROUTE, TOTALSUM_TIME = :TOTALSUM_TIME WHERE ID = :id`,
 
       {
-
         NAME_ROUTE: nameRoute.trim(),
 
         TOTALSUM_TIME: totalTime || 0,
 
-        id
-
+        id,
       },
 
       { autoCommit: true }
-
     );
 
-
-
     if (result.rowsAffected === 0) {
-
       return res.status(404).json({ error: "Route not found" });
-
     }
-
-
 
     res.json({ message: "Route updated successfully!" });
-
   } catch (err) {
-
     console.error("❌ PUT /carroutes/:id error:", err);
 
-    res.status(500).json({ error: "Database update failed", details: err.message });
-
+    res
+      .status(500)
+      .json({ error: "Database update failed", details: err.message });
   } finally {
-
     if (connection) {
-
       try {
-
         await connection.close();
-
       } catch (closeErr) {
-
         console.error("Connection close error:", closeErr);
-
       }
-
     }
-
   }
-
 });
-
-
 
 // DELETE route
 
 app.delete("/carroutes/:id", async (req, res) => {
-
   const { id } = req.params;
-
-
 
   let connection;
 
   try {
-
     connection = await oracledb.getConnection(dbConfig);
 
-
-
     const result = await connection.execute(
-
       `DELETE FROM ROUTE WHERE ID = :id`,
 
       { id },
 
       { autoCommit: true }
-
     );
 
-
-
     if (result.rowsAffected === 0) {
-
       return res.status(404).json({ error: "Route not found" });
-
     }
 
-
-
     res.json({ message: "Route deleted successfully!" });
-
   } catch (err) {
-
     console.error("❌ DELETE /carroutes/:id error:", err);
 
-    res.status(500).json({ error: "Database delete failed", details: err.message });
+    res
+      .status(500)
+      .json({ error: "Database delete failed", details: err.message });
   } finally {
     if (connection) {
       try {
@@ -1378,20 +1252,21 @@ app.delete("/carroutes/:id", async (req, res) => {
   }
 });
 
-
 // Error handler
 app.use((err, req, res, next) => {
   console.error("Unhandled error:", err);
-  res.status(500).json({ error: "Internal server error", details: err.message });
+  res
+    .status(500)
+    .json({ error: "Internal server error", details: err.message });
 });
 
 // 404 handler
 app.use((req, res) => {
-
   console.log(`❌ 404: ${req.method} ${req.url} not found`);
 
-  res.status(404).json({ error: `Endpoint ${req.method} ${req.url} not found` });
-
+  res
+    .status(404)
+    .json({ error: `Endpoint ${req.method} ${req.url} not found` });
 });
 
 //สิ้นสุดส่วนของ API การจัดการเส้นทางรถ
