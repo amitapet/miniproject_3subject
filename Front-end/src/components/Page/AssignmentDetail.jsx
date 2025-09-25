@@ -106,7 +106,14 @@ function AssignmentDetail() {
             <div className="job-extra">
               <p>ทะเบียนรถ: {schedule.ID_CAR}</p>
               <p>ประเภทรถ: {schedule.NAME}</p>
-              <p>ลูกค้าจองแล้ว : {passengers.length} ที่นั่ง</p>
+              <p>
+                ลูกค้าจองแล้ว :{" "}
+                {passengers.reduce(
+                  (total, p) => total + Number(p.SEAT || 0),
+                  0
+                )}{" "}
+                ที่นั่ง
+              </p>
             </div>
             <div className="job-route">
               <p>เริ่มงาน เวลา : {schedule.TIMEOUT} น.</p>

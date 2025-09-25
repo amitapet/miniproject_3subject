@@ -46,15 +46,9 @@ function Assignment() {
         {/* Search Box */}
         <div className="search-box">
           <label>
-            ต้นทาง : <br />
+            เส้นทาง : <br />
             <select>
-              <option>ตลาดนัด</option>
-            </select>
-          </label>
-          <label>
-            ปลายทาง : <br />
-            <select>
-              <option>หน้ามอ</option>
+              <option>mut to mut</option>
             </select>
           </label>
           <label>
