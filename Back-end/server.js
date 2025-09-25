@@ -146,6 +146,38 @@ app.post("/login", async (req, res) => {
 //สิ้นสุดส่วนของ API login
 
 // GET assignments
+app.get("/assignment", async (req, res) => {
+  let connection;
+  try {
+    connection = await oracledb.getConnection(dbConfig);
+    const result = await connection.execute(
+      `SELECT r.name_route, 
+        t.id, to_char(t.date_trip,'dd/mm/yyyy') as tripDate, 
+        t.timeout, t.id_car, 
+        t.id_employee, ty.name, 
+        COUNT(t.id) AS trip_count
+      FROM trip t
+      LEFT JOIN stop_duration s ON t.id = s.id_trip
+      LEFT JOIN route r ON s.id_route = r.id
+      LEFT JOIN car ON t.id_car = car.id
+      LEFT JOIN type_car ty ON car.id_typecar = ty.id
+      WHERE t.id_employee IS NULL
+      GROUP BY r.name_route, t.id, t.date_trip, t.timeout, 
+        t.id_car, t.id_employee, ty.name
+      ORDER BY t.id`,
+      {}, // bind parameter
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error("❌ GET /assignment error:", err);
+    res.status(500).json({ error: "DB Error", details: err.message });
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+
 app.get("/assignment/:empId", async (req, res) => {
   let connection;
   try {
@@ -167,7 +199,7 @@ app.get("/assignment/:empId", async (req, res) => {
       WHERE t.id_employee = :empId
       GROUP BY r.name_route, t.id, t.date_trip, t.timeout, 
         t.id_car, t.id_employee, ty.name
-      having not t.id in (select Trip_id from work)
+      having t.id not in (select Trip_id from work)
       ORDER BY t.id`,
       { empId }, // bind parameter
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
