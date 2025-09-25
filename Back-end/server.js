@@ -213,6 +213,76 @@ app.get("/assignmentdetail/:tripId", async (req, res) => {
 });
 // end assignmentdetail
 
+//work
+app.get("/work/check/:empId", async (req, res) => {
+  let connection;
+  try {
+    const { empId } = req.params;
+    connection = await oracledb.getConnection(dbConfig);
+
+    // สมมุติว่า 1 EMP_ID ทำงานได้แค่ 1 TRIP ในเวลาเดียวกัน
+    const result = await connection.execute(
+      `SELECT trip_id 
+       FROM work 
+       WHERE emp_id = :empId`,
+      { empId },
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    if (result.rows.length > 0) {
+      return res.json({ hasWork: true, tripId: result.rows[0].TRIP_ID });
+    }
+
+    res.json({ hasWork: false });
+  } catch (err) {
+    console.error("❌ GET /work/check/:empId error:", err);
+    res.status(500).json({ error: "DB Error", details: err.message });
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+
+app.post("/work", async (req, res) => {
+  let connection;
+  try {
+    const { emp_id, trip_id } = req.body; // รับค่าจาก frontend
+    connection = await oracledb.getConnection(dbConfig);
+
+    // ตรวจสอบก่อนว่ามี record อยู่แล้วหรือยัง
+    const check = await connection.execute(
+      `SELECT COUNT(*) AS CNT 
+       FROM work 
+       WHERE emp_id = :emp_id AND trip_id = :trip_id`,
+      { emp_id, trip_id },
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    if (check.rows[0].CNT > 0) {
+      return res.status(400).json({ 
+        error: "งานนี้ถูกเริ่มแล้ว", 
+        details: "ไม่สามารถเริ่มงานซ้ำได้" 
+      });
+    }
+
+    // ถ้ายังไม่มี → insert
+    await connection.execute(
+      `INSERT INTO work (emp_id, trip_id) VALUES (:emp_id, :trip_id)`,
+      { emp_id, trip_id },
+      { autoCommit: true }
+    );
+
+    res.json({ message: "✅ เริ่มงานเรียบร้อยแล้ว" });
+  } catch (err) {
+    console.error("❌ POST /work error:", err);
+    res.status(500).json({ error: "DB Error", details: err.message });
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+
+
+//end work
+
 //ส่วนของ API เพิ่ม ลบ แก้ไข ข้อมูลสถานี
 
 app.get("/stations", async (req, res) => {

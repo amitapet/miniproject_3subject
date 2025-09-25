@@ -8,6 +8,10 @@ function AssignmentDetail() {
   const navigate = useNavigate();
   const [passengers, setPassengers] = useState([]);
   const [schedule, setSchedule] = useState(null);
+  const [hasWork, setHasWork] = useState(false);
+  const [currentWorkTrip, setCurrentWorkTrip] = useState(null);
+
+  const [showModal, setShowModal] = useState(false);
 
   // เอา empId จาก localStorage
   const user = JSON.parse(localStorage.getItem("user"));
@@ -38,11 +42,49 @@ function AssignmentDetail() {
       }
     };
 
+    const checkWork = async () => {
+      try {
+        const res = await axios.get(
+          `http://localhost:3000/work/check/${empId}`
+        );
+        if (res.data.hasWork) {
+          setHasWork(true);
+          setCurrentWorkTrip(res.data.tripId);
+        } else {
+          setHasWork(false);
+        }
+      } catch (err) {
+        console.error("❌ Check work error:", err);
+      }
+    };
+
+    checkWork();
+
     if (empId) {
       fetchSchedule();
     }
+
     fetchPassengers();
   }, [id, empId]);
+
+  const handleConfirm = async () => {
+    try {
+      await axios.post("http://localhost:3000/work", {
+        emp_id: empId,
+        trip_id: id,
+      });
+
+      alert("✅ เริ่มงานเรียบร้อยแล้ว");
+      setShowModal(false);
+    } catch (err) {
+      console.error("❌ Start work error:", err);
+      if (err.response?.status === 400) {
+        alert(err.response.data.error); // งานนี้ถูกเริ่มแล้ว
+      } else {
+        alert("ไม่สามารถเริ่มงานได้");
+      }
+    }
+  };
 
   return (
     <>
@@ -102,7 +144,40 @@ function AssignmentDetail() {
             ))}
           </tbody>
         </table>
-        <button className="btn-start">เริ่มงาน</button>
+        <button
+          className="btn-start"
+          onClick={() => setShowModal(true)}
+          disabled={hasWork && String(currentWorkTrip) !== String(id)}
+        >
+          เริ่มงาน
+        </button>
+
+        {showModal && (
+          <div className="modal-overlay">
+            <div className="modal-content">
+              <h3>ยืนยันการเริ่มทำงานหรือไม่</h3>
+              <p>หากยืนยัน คุณไม่สามารถย้อนกลับได้</p>
+              <div className="modal-actions">
+                <button className="btn-confirm" onClick={handleConfirm}>
+                  ยืนยัน
+                </button>
+                <button
+                  className="btn-cancel"
+                  onClick={() => setShowModal(false)}
+                >
+                  ยกเลิก
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {hasWork && String(currentWorkTrip) !== String(id) && (
+          <p style={{ color: "red", marginTop: "10px" }}>
+            ⚠ คุณมีงานที่กำลังทำอยู่ (Trip {currentWorkTrip})
+            กรุณาสิ้นสุดงานก่อน
+          </p>
+        )}
       </div>
     </>
   );
