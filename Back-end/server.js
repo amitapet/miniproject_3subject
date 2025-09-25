@@ -57,6 +57,8 @@ app.post("/login", async (req, res) => {
           e.USERNAME,
           e.FNAME,
           e.LNAME,
+          e.EMAIL,
+          d.NAME AS DEPARTMENT_NAME,
           p.NAME AS POSITION_NAME,
           per.MGMT_STATION,
           per.MGMT_ROUTE,
@@ -72,6 +74,7 @@ app.post("/login", async (req, res) => {
           per.CURRENTJOB
    FROM EMPLOYEE e
    JOIN POSITION p ON e.ID_POSITION = p.ID
+   join DEPARTMENT d on e.ID_DEPARTMENT = d.id 
    JOIN PERMISSION per ON p.IDPERMISSION = per.ID
    WHERE e.USERNAME = :username AND e.PASSWORD = :password`,
       [username, password],
@@ -88,6 +91,8 @@ app.post("/login", async (req, res) => {
           id: user.ID,
           username: user.USERNAME,
           name: user.FNAME + " " + user.LNAME,
+          email: user.EMAIL,
+          department: user.DEPARTMENT_NAME,
           position: user.POSITION_NAME,
           permission: {
             MGMT_STATION: user.MGMT_STATION,
@@ -1208,8 +1213,4 @@ app.use((req, res) => {
     .status(404)
     .json({ error: `Endpoint ${req.method} ${req.url} not found` });
 });
-
-
-
-
-
+//สิ้นสุดส่วนของ API การจัดการเส้นทางรถ
