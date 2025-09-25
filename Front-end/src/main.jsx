@@ -19,6 +19,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Sidebar from "./components/Sidebar";
 import Profile from "./components/Page/Profile";
 import Workschedule from "./components/Page/Workschedule";
+import WorkDetail from "./components/Page/WorkDetail";
 import Assignment from "./components/Page/Assignment";
 import AssignmentDetail from "./components/Page/AssignmentDetail";
 import Currentjob from "./components/Page/Currentjob";
@@ -128,6 +129,14 @@ const router = createBrowserRouter([
     element: (
       <Layout>
         <Workschedule />
+      </Layout>
+    ),
+  },
+  {
+    path: "/workdetail/:id",
+    element: (
+      <Layout>
+        <WorkDetail />
       </Layout>
     ),
   },

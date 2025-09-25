@@ -167,7 +167,7 @@ function Workschedule() {
               </div>
               <button
                 className="detail-btn"
-                onClick={() => navigate(`/assignment/${s.ID}`)}
+                onClick={() => navigate(`/workdetail/${s.ID}`)}
               >
                 รายละเอียด
               </button>

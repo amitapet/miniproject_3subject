@@ -256,6 +256,41 @@ app.get("/assignmentdetail/:tripId", async (req, res) => {
 // end assignmentdetail
 
 //work
+app.get("/workdetail/:tripId", async (req, res) => {
+  let connection;
+  try {
+    const tripId = req.params.tripId; // ดึงค่าจาก URL เช่น /assignment/E0002
+
+    connection = await oracledb.getConnection(dbConfig);
+
+    const result = await connection.execute(
+      `SELECT r.name_route, 
+        t.id, to_char(t.date_trip,'dd/mm/yyyy') as tripDate, 
+        t.timeout, t.id_car, 
+        t.id_employee, ty.name, 
+        COUNT(t.id) AS trip_count
+      FROM trip t
+      LEFT JOIN stop_duration s ON t.id = s.id_trip
+      LEFT JOIN route r ON s.id_route = r.id
+      LEFT JOIN car ON t.id_car = car.id
+      LEFT JOIN type_car ty ON car.id_typecar = ty.id
+      WHERE t.id = :tripId
+      GROUP BY r.name_route, t.id, t.date_trip, t.timeout, 
+        t.id_car, t.id_employee, ty.name
+      having t.id not in (select Trip_id from work)
+      ORDER BY t.id`,
+      { tripId }, // bind parameter
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error("❌ GET /assignment/:tripId error:", err);
+    res.status(500).json({ error: "DB Error", details: err.message });
+  } finally {
+    if (connection) await connection.close();
+  }
+});
 app.get("/work/:empId", async (req, res) => {
   let connection;
   try {
@@ -340,6 +375,33 @@ app.post("/work", async (req, res) => {
     res.json({ message: "✅ เริ่มงานเรียบร้อยแล้ว" });
   } catch (err) {
     console.error("❌ POST /work error:", err);
+    res.status(500).json({ error: "DB Error", details: err.message });
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+
+app.put("/work/get", async (req, res) => {
+  let connection;
+  try {
+    const { emp_id, trip_id } = req.body;
+    connection = await oracledb.getConnection(dbConfig);
+
+    const result = await connection.execute(
+      `UPDATE trip 
+       SET id_employee = :emp_id
+       WHERE id = :trip_id`,
+      { emp_id, trip_id },
+      { autoCommit: true }
+    );
+
+    if (result.rowsAffected === 0) {
+      return res.status(404).json({ error: "ไม่พบงานที่ต้องการรับ" });
+    }
+
+    res.json({ message: "รับงานเรียบร้อยแล้ว" });
+  } catch (err) {
+    console.error("❌ PUT /work/get error:", err);
     res.status(500).json({ error: "DB Error", details: err.message });
   } finally {
     if (connection) await connection.close();
