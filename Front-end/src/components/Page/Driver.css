@@ -7,6 +7,14 @@
   font-family: "Tahoma", sans-serif;
 }
 
+.nowork {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 50vh;
+  font-size: 64px;
+}
+
 /* กล่องค้นหา */
 .search-box {
   background: #ffffff;
@@ -210,6 +218,20 @@
 }
 .btn-start:hover {
   background: #27ae60;
+}
+
+.btn-end {
+  background: #a32803;
+  color: white;
+  padding: 10px 30px;
+  border-radius: 8px;
+  border: none;
+  margin-top: 100px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.btn-end:hover {
+  background: #681b04;
 }
 
 .btn-route {

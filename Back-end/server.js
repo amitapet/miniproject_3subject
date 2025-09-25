@@ -167,6 +167,7 @@ app.get("/assignment/:empId", async (req, res) => {
       WHERE t.id_employee = :empId
       GROUP BY r.name_route, t.id, t.date_trip, t.timeout, 
         t.id_car, t.id_employee, ty.name
+      having not t.id in (select Trip_id from work)
       ORDER BY t.id`,
       { empId }, // bind parameter
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
@@ -223,6 +224,30 @@ app.get("/assignmentdetail/:tripId", async (req, res) => {
 // end assignmentdetail
 
 //work
+app.get("/work/:empId", async (req, res) => {
+  let connection;
+  try {
+    const empId = req.params.empId;
+
+    connection = await oracledb.getConnection(dbConfig);
+
+    const result = await connection.execute(
+      `SELECT trip_id
+       FROM work 
+       WHERE emp_id = :empId and status = 'doing'`,
+      { empId },
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error("❌ GET /work/:empId error:", err);
+    res.status(500).json({ error: "DB Error", details: err.message });
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+
 app.get("/work/check/:empId", async (req, res) => {
   let connection;
   try {
@@ -275,7 +300,7 @@ app.post("/work", async (req, res) => {
 
     // ถ้ายังไม่มี → insert
     await connection.execute(
-      `INSERT INTO work (emp_id, trip_id) VALUES (:emp_id, :trip_id)`,
+      `INSERT INTO work (emp_id, trip_id , status) VALUES (:emp_id, :trip_id,'doing')`,
       { emp_id, trip_id },
       { autoCommit: true }
     );
@@ -283,6 +308,33 @@ app.post("/work", async (req, res) => {
     res.json({ message: "✅ เริ่มงานเรียบร้อยแล้ว" });
   } catch (err) {
     console.error("❌ POST /work error:", err);
+    res.status(500).json({ error: "DB Error", details: err.message });
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+
+app.put("/work/end", async (req, res) => {
+  let connection;
+  try {
+    const { emp_id, trip_id } = req.body;
+    connection = await oracledb.getConnection(dbConfig);
+
+    const result = await connection.execute(
+      `UPDATE work 
+       SET status = 'finished'
+       WHERE emp_id = :emp_id AND trip_id = :trip_id`,
+      { emp_id, trip_id },
+      { autoCommit: true }
+    );
+
+    if (result.rowsAffected === 0) {
+      return res.status(404).json({ error: "ไม่พบงานที่ต้องการจบ" });
+    }
+
+    res.json({ message: "จบงานเรียบร้อยแล้ว" });
+  } catch (err) {
+    console.error("❌ PUT /work/end error:", err);
     res.status(500).json({ error: "DB Error", details: err.message });
   } finally {
     if (connection) await connection.close();
