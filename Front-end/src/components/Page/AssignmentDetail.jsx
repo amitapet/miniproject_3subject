@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { FaSearch } from "react-icons/fa";
 import "./Driver.css";
 
 function AssignmentDetail() {
@@ -13,6 +14,18 @@ function AssignmentDetail() {
 
   const [showModal, setShowModal] = useState(false);
 
+  // Dropdown selections
+  const [pickupSelect, setPickupSelect] = useState("");
+  const [dropoffSelect, setDropoffSelect] = useState("");
+
+  // Filters applied on search
+  const [pickupFilter, setPickupFilter] = useState("");
+  const [dropoffFilter, setDropoffFilter] = useState("");
+
+  // Option lists
+  const [pickupOptions, setPickupOptions] = useState([]);
+  const [dropoffOptions, setDropoffOptions] = useState([]);
+
   // เอา empId จาก localStorage
   const user = JSON.parse(localStorage.getItem("user"));
   const empId = user?.id || "";
@@ -24,6 +37,14 @@ function AssignmentDetail() {
           `http://localhost:3000/assignmentdetail/${id}`
         );
         setPassengers(res.data);
+
+        // สร้าง option lists แบบ unique
+        setPickupOptions([
+          ...new Set(res.data.map((p) => p.TIME_IN).filter(Boolean)),
+        ]);
+        setDropoffOptions([
+          ...new Set(res.data.map((p) => p.TIME_IN_1).filter(Boolean)),
+        ]);
       } catch (err) {
         console.error("❌ Fetch passengers error:", err);
       }
@@ -34,7 +55,6 @@ function AssignmentDetail() {
         const res = await axios.get(
           `http://localhost:3000/assignment/${empId}`
         );
-        // หา trip ที่ id ตรงกับที่กดเข้ามา
         const trip = res.data.find((t) => String(t.ID) === String(id));
         setSchedule(trip);
       } catch (err) {
@@ -59,11 +79,7 @@ function AssignmentDetail() {
     };
 
     checkWork();
-
-    if (empId) {
-      fetchSchedule();
-    }
-
+    if (empId) fetchSchedule();
     fetchPassengers();
   }, [id, empId]);
 
@@ -73,18 +89,25 @@ function AssignmentDetail() {
         emp_id: empId,
         trip_id: id,
       });
-
       alert("✅ เริ่มงานเรียบร้อยแล้ว");
       setShowModal(false);
     } catch (err) {
       console.error("❌ Start work error:", err);
       if (err.response?.status === 400) {
-        alert(err.response.data.error); // งานนี้ถูกเริ่มแล้ว
+        alert(err.response.data.error);
       } else {
         alert("ไม่สามารถเริ่มงานได้");
       }
     }
   };
+
+  // กรองผู้โดยสารตามจุดรับ/จุดส่ง
+  const filteredPassengers = passengers.filter((p) => {
+    return (
+      (!pickupFilter || (p.TIME_IN || "") === pickupFilter) &&
+      (!dropoffFilter || (p.TIME_IN_1 || "") === dropoffFilter)
+    );
+  });
 
   return (
     <>
@@ -122,6 +145,49 @@ function AssignmentDetail() {
           </div>
         )}
 
+        {/* Search ผู้โดยสาร */}
+        <div className="search-box">
+          <label>
+            จุดรับ:
+            <select
+              value={pickupSelect}
+              onChange={(e) => setPickupSelect(e.target.value)}
+            >
+              <option value="">ตั้งแต่ต้นทาง</option>
+              {pickupOptions.map((pickup, idx) => (
+                <option key={idx} value={pickup}>
+                  {pickup}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            จุดส่ง:
+            <select
+              value={dropoffSelect}
+              onChange={(e) => setDropoffSelect(e.target.value)}
+            >
+              <option value="">ถึงปลายทาง</option>
+              {dropoffOptions.map((dropoff, idx) => (
+                <option key={idx} value={dropoff}>
+                  {dropoff}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <button
+            className="search-btn"
+            onClick={() => {
+              setPickupFilter(pickupSelect);
+              setDropoffFilter(dropoffSelect);
+            }}
+          >
+            <FaSearch />
+          </button>
+        </div>
+
         <h3>ข้อมูลผู้โดยสาร</h3>
         <table className="passenger-table">
           <thead>
@@ -136,7 +202,7 @@ function AssignmentDetail() {
             </tr>
           </thead>
           <tbody>
-            {passengers.map((p, i) => (
+            {filteredPassengers.map((p, i) => (
               <tr key={i}>
                 <td>{i + 1}</td>
                 <td>{p.TEL}</td>
@@ -151,6 +217,7 @@ function AssignmentDetail() {
             ))}
           </tbody>
         </table>
+
         <button
           className="btn-start"
           onClick={() => setShowModal(true)}

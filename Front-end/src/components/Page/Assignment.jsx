@@ -11,9 +11,27 @@ function Assignment() {
   const navigate = useNavigate();
   const [schedules, setSchedules] = useState([]);
 
-  // Pagination state
+  // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
+
+  // Dropdown selections
+  const [routeSelect, setRouteSelect] = useState("");
+  const [dateSelect, setDateSelect] = useState("");
+  const [timeSelect, setTimeSelect] = useState("");
+  const [carTypeSelect, setCarTypeSelect] = useState("");
+
+  // Filters applied on search
+  const [routeFilter, setRouteFilter] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
+  const [timeFilter, setTimeFilter] = useState("");
+  const [carTypeFilter, setCarTypeFilter] = useState("");
+
+  // Option lists
+  const [routeOptions, setRouteOptions] = useState([]);
+  const [dateOptions, setDateOptions] = useState([]);
+  const [timeOptions, setTimeOptions] = useState([]);
+  const [carTypeOptions, setCarTypeOptions] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -22,6 +40,12 @@ function Assignment() {
           `http://localhost:3000/assignment/${empId}`
         );
         setSchedules(res.data);
+
+        // สร้าง option lists แบบ unique
+        setRouteOptions([...new Set(res.data.map((s) => s.NAME_ROUTE))]);
+        setDateOptions([...new Set(res.data.map((s) => s.TRIPDATE))]);
+        setTimeOptions([...new Set(res.data.map((s) => s.TIMEOUT))]);
+        setCarTypeOptions([...new Set(res.data.map((s) => s.NAME))]);
       } catch (err) {
         console.error("❌ Fetch schedules error:", err);
       }
@@ -30,13 +54,24 @@ function Assignment() {
     fetchData();
   }, [empId]);
 
-  // คำนวณข้อมูลที่จะโชว์ในหน้าปัจจุบัน
+  // กรองข้อมูลตาม filter (เฉพาะเมื่อกดค้นหา)
+  const filteredSchedules = schedules.filter((s) => {
+    return (
+      (!routeFilter || s.NAME_ROUTE === routeFilter) &&
+      (!dateFilter || s.TRIPDATE === dateFilter) &&
+      (!timeFilter || s.TIMEOUT === timeFilter) &&
+      (!carTypeFilter || s.NAME === carTypeFilter)
+    );
+  });
+
+  // Pagination
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentSchedules = schedules.slice(indexOfFirstItem, indexOfLastItem);
-
-  // จำนวนหน้าทั้งหมด
-  const totalPages = Math.ceil(schedules.length / itemsPerPage);
+  const currentSchedules = filteredSchedules.slice(
+    indexOfFirstItem,
+    indexOfLastItem
+  );
+  const totalPages = Math.ceil(filteredSchedules.length / itemsPerPage);
 
   return (
     <>
@@ -47,27 +82,74 @@ function Assignment() {
         <div className="search-box">
           <label>
             เส้นทาง : <br />
-            <select>
-              <option>mut to mut</option>
+            <select
+              value={routeSelect}
+              onChange={(e) => setRouteSelect(e.target.value)}
+            >
+              <option value="">ทั้งหมด</option>
+              {routeOptions.map((route, idx) => (
+                <option key={idx} value={route}>
+                  {route}
+                </option>
+              ))}
             </select>
           </label>
+
           <label>
             วันที่ : <br />
-            <input type="date" />
+            <select
+              value={dateSelect}
+              onChange={(e) => setDateSelect(e.target.value)}
+            >
+              <option value="">ทั้งหมด</option>
+              {dateOptions.map((date, idx) => (
+                <option key={idx} value={date}>
+                  {date}
+                </option>
+              ))}
+            </select>
           </label>
+
           <label>
             เวลา : <br />
-            <select>
-              <option>09:30 - 10:00</option>
+            <select
+              value={timeSelect}
+              onChange={(e) => setTimeSelect(e.target.value)}
+            >
+              <option value="">ทั้งหมด</option>
+              {timeOptions.map((time, idx) => (
+                <option key={idx} value={time}>
+                  {time}
+                </option>
+              ))}
             </select>
           </label>
+
           <label>
             ประเภทรถ : <br />
-            <select>
-              <option>รถตู้</option>
+            <select
+              value={carTypeSelect}
+              onChange={(e) => setCarTypeSelect(e.target.value)}
+            >
+              <option value="">ทั้งหมด</option>
+              {carTypeOptions.map((type, idx) => (
+                <option key={idx} value={type}>
+                  {type}
+                </option>
+              ))}
             </select>
           </label>
-          <button className="search-btn">
+
+          <button
+            className="search-btn"
+            onClick={() => {
+              setRouteFilter(routeSelect);
+              setDateFilter(dateSelect);
+              setTimeFilter(timeSelect);
+              setCarTypeFilter(carTypeSelect);
+              setCurrentPage(1); // เริ่มหน้าหนึ่ง
+            }}
+          >
             <FaSearch /> ค้นหา
           </button>
         </div>
