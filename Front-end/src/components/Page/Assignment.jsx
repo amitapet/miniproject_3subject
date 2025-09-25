@@ -13,7 +13,7 @@ function Assignment() {
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 6;
+  const itemsPerPage = 5;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -85,7 +85,7 @@ function Assignment() {
               <div className="schedule-info">
                 <div>เส้นทาง : {s.NAME_ROUTE} </div>
                 <div>
-                  รอบที่ {s.ID} วันที่ {s.TRIPDATE} | ออกเวลา {s.TIMEOUT}
+                  รอบที่ {s.ID} วันที่ {s.TRIPDATE} | ออกเวลา {s.TIMEOUT} น.
                 </div>
                 <div>
                   ทะเบียนรถ: {s.ID_CAR} | ประเภทรถ: {s.NAME}
@@ -105,7 +105,7 @@ function Assignment() {
         <div className="pagination">
           <button
             disabled={currentPage === 1}
-            onClick={() => setCurrentPage(prev => prev - 1)}
+            onClick={() => setCurrentPage((prev) => prev - 1)}
           >
             ก่อนหน้า
           </button>
@@ -122,7 +122,7 @@ function Assignment() {
 
           <button
             disabled={currentPage === totalPages}
-            onClick={() => setCurrentPage(prev => prev + 1)}
+            onClick={() => setCurrentPage((prev) => prev + 1)}
           >
             ถัดไป
           </button>

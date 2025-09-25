@@ -180,8 +180,38 @@ app.get("/assignment/:empId", async (req, res) => {
     if (connection) await connection.close();
   }
 });
-
 // end assignment
+
+// GET assignmentsdetail
+app.get("/assignmentdetail/:tripId", async (req, res) => {
+  let connection;
+  try {
+    const tripId = req.params.tripId;
+
+    connection = await oracledb.getConnection(dbConfig);
+
+    const result = await connection.execute(
+      `select c.tel , c.fname , 
+        c.lname , s.time_in , 
+        stop.time_in , r.seat , r.status
+      from RESERVE r
+        join CUSTOMER c on r.CUS_ID = c.id
+        join STOP_DURATION s on r.startt = s.id
+        join STOP_DURATION stop on r.stopt = stop.id
+      where r.TRIP_ID = :tripId`,
+      { tripId }, // bind parameter
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error("❌ GET /assignmentdetail/:tripId error:", err);
+    res.status(500).json({ error: "DB Error", details: err.message });
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+// end assignmentdetail
 
 //ส่วนของ API เพิ่ม ลบ แก้ไข ข้อมูลสถานี
 

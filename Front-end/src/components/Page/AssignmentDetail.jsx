@@ -1,36 +1,48 @@
 import { useParams, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import axios from "axios";
 import "./Driver.css";
 
 function AssignmentDetail() {
-  const { id } = useParams();
+  const { id } = useParams(); // tripId จาก route
   const navigate = useNavigate();
+  const [passengers, setPassengers] = useState([]);
+  const [schedule, setSchedule] = useState(null);
 
-  const passengers = [
-    {
-      id: 1,
-      phone: "098-999-9999",
-      name: "สมศักดิ์ นวมวงศ์",
-      from: "ตลาดนัด",
-      to: "หน้ามอ",
-      seat: 2,
-    },
-    {
-      id: 2,
-      phone: "098-999-9999",
-      name: "สมศรี นวมวงศ์",
-      from: "ตลาดนัด",
-      to: "บางกอกกรีฑา",
-      seat: 1,
-    },
-    {
-      id: 3,
-      phone: "098-999-9999",
-      name: "สมใจ นวมวงศ์",
-      from: "ปตท",
-      to: "หน้ามอ",
-      seat: 1,
-    },
-  ];
+  // เอา empId จาก localStorage
+  const user = JSON.parse(localStorage.getItem("user"));
+  const empId = user?.id || "";
+
+  useEffect(() => {
+    const fetchPassengers = async () => {
+      try {
+        const res = await axios.get(
+          `http://localhost:3000/assignmentdetail/${id}`
+        );
+        setPassengers(res.data);
+      } catch (err) {
+        console.error("❌ Fetch passengers error:", err);
+      }
+    };
+
+    const fetchSchedule = async () => {
+      try {
+        const res = await axios.get(
+          `http://localhost:3000/assignment/${empId}`
+        );
+        // หา trip ที่ id ตรงกับที่กดเข้ามา
+        const trip = res.data.find((t) => String(t.ID) === String(id));
+        setSchedule(trip);
+      } catch (err) {
+        console.error("❌ Fetch schedule error:", err);
+      }
+    };
+
+    if (empId) {
+      fetchSchedule();
+    }
+    fetchPassengers();
+  }, [id, empId]);
 
   return (
     <>
@@ -40,24 +52,26 @@ function AssignmentDetail() {
           ⬅ กลับ
         </button>
 
-        <div className="job-info-card">
-          <div className="job-info">
-            <h3>รายละเอียดงาน</h3>
-            <p>รอบที่ {id}</p>
-            <p>สถานี : ตลาดนัด → หน้ามอ</p>
-            <p>วันที่ 01/01/2568</p>
-            <p>เวลารถออก : 9.30 น.</p>
+        {schedule && (
+          <div className="job-info-card">
+            <div className="job-info">
+              <h3>รายละเอียดงาน</h3>
+              <p>รอบที่ {schedule.ID}</p>
+              <p>เส้นทาง : {schedule.NAME_ROUTE}</p>
+              <p>วันที่ {schedule.TRIPDATE}</p>
+              <p>เวลารถออก : {schedule.TIMEOUT} น.</p>
+            </div>
+            <div className="job-extra">
+              <p>ทะเบียนรถ: {schedule.ID_CAR}</p>
+              <p>ประเภทรถ: {schedule.NAME}</p>
+              <p>ลูกค้าจองแล้ว : {passengers.length} ที่นั่ง</p>
+            </div>
+            <div className="job-route">
+              <p>เริ่มงาน เวลา : {schedule.TIMEOUT} น.</p>
+              <button className="btn-route">เส้นทาง</button>
+            </div>
           </div>
-          <div className="job-extra">
-            <p>จุดจอดทั้งหมด : 11 จุด</p>
-            <p>ที่นั่งทั้งหมด : 12 ที่นั่ง</p>
-            <p>ลูกค้าจองแล้ว : 10 ที่นั่ง</p>
-          </div>
-          <div className="job-route">
-            <p>เริ่มงาน เวลา : 9.30 น.</p>
-            <button className="btn-route">เส้นทาง</button>
-          </div>
-        </div>
+        )}
 
         <h3>ข้อมูลผู้โดยสาร</h3>
         <table className="passenger-table">
@@ -74,14 +88,16 @@ function AssignmentDetail() {
           </thead>
           <tbody>
             {passengers.map((p, i) => (
-              <tr key={p.id}>
+              <tr key={i}>
                 <td>{i + 1}</td>
-                <td>{p.phone}</td>
-                <td>{p.name}</td>
-                <td>{p.from}</td>
-                <td>{p.to}</td>
-                <td>{p.seat}</td>
-                <td>-</td>
+                <td>{p.TEL}</td>
+                <td>
+                  {p.FNAME} {p.LNAME}
+                </td>
+                <td>{p.TIME_IN}</td>
+                <td>{p.TIME_IN_1}</td>
+                <td>{p.SEAT}</td>
+                <td>{p.STATUS}</td>
               </tr>
             ))}
           </tbody>
