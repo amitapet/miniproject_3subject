@@ -1,4 +1,4 @@
-/* แถว dropdown+ปุ่มลบประเภทรถใน modal */
+
 .delete-type-row {
   display: flex;
   gap: 10px;
@@ -14,7 +14,7 @@
 }
 
 /* Wrapper หลัก */
-.cars-wrapper {
+.positions-wrapper {
   display: flex;
   min-height: 90vh;
   min-width: 150vh;
@@ -23,7 +23,7 @@
   position: relative;
 }
 
-.cars-content {
+.positions-content {
   flex: 1;
   padding: 20px;
 }
@@ -34,20 +34,20 @@ h2 {
 }
 
 /* ตารางรถ */
-.car-table {
+.positions-table {
   width: 100%;
   border-collapse: collapse;
   background-color: white;
 }
 
-.car-table th,
-.car-table td {
+.positions-table th,
+.positions-table td {
   border: 1px solid #ddd;
   padding: 8px;
   text-align: center;
 }
 
-.car-table th {
+.positions-table th {
   background-color: #05375a;
   color: white;
 }
@@ -106,26 +106,27 @@ h2 {
   pointer-events: none;
 }
 
-.car-search {
+.positions-search {
   width: 100%;
   padding: 12px 12px 12px 32px;
   border: 1px solid #ccc;
   border-radius: 8px;
 }
 
-/* ปุ่มเพิ่มรถ */
+/* ปุ่มเพิ่ม */
 .butn-add {
   padding: 10px 14px;
-  background: #05375a;
+  background: #bd3922;
   color: white;
   border: none;
   border-radius: 8px;
   cursor: pointer;
   white-space: nowrap;
   
+  
 }
 
-.butn-add:hover {
+.btn-add:hover {
   background: #094d7b;
 }
 
@@ -247,3 +248,31 @@ h2 {
   border-radius: 4px;
   box-sizing: border-box;
 }
+
+
+.permissions-checkbox {
+  display: flex;
+  flex-direction: column; /* เรียงแนวตั้ง */
+  gap: 8px;               /* ช่องว่างระหว่าง checkbox */
+  margin-top: 8px;
+}
+
+.permissions-checkbox label {
+  display: flex;
+  align-items: center;   /* ทำให้ checkbox กับข้อความแนวกลาง */
+  font-size: 14px;
+  color: #333;
+  cursor: pointer;
+  line-height: 1.2;
+}
+
+.permissions-checkbox input[type="checkbox"] {
+  margin: 0 6px 0 0;     /* ระยะห่างขวา 6px */
+  width: 16px;
+  height: 16px;
+  accent-color: #3c97d4;
+  vertical-align: middle;
+  cursor: pointer;
+}
+
+

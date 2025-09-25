@@ -8,7 +8,9 @@ const PORT = 3000;
 app.use(cors());
 app.use(express.json());
 
-// Load Thick mode
+
+
+// ========================Load Thick mode============================
 const clientLibDir =
   process.platform === "win32"
     ? "C:\\oracle_sv\\instantclient_23_9" // <-- เปลี่ยน path ของคุณ
@@ -16,7 +18,7 @@ const clientLibDir =
 
 oracledb.initOracleClient({ libDir: clientLibDir });
 
-// Oracle DB config
+// ========================Oracle DB config===========================
 const dbConfig = {
   user: "DBT68031",
   password: "64812",
@@ -42,7 +44,7 @@ initOracle().then(() => {
   });
 });
 
-// ส่วนของ API login
+// =================================ส่วนของ API login==================================
 app.post("/login", async (req, res) => {
   const { username, password } = req.body;
   let connection;
@@ -138,9 +140,9 @@ app.post("/login", async (req, res) => {
     if (connection) await connection.close();
   }
 });
-//สิ้นสุดส่วนของ API login
 
-//ส่วนของ API เพิ่ม ลบ แก้ไข ข้อมูลสถานี
+
+//=============================ส่วนของ API ข้อมูลสถานี=====================================
 
 app.get("/stations", async (req, res) => {
   let connection;
@@ -170,7 +172,7 @@ app.get("/stations", async (req, res) => {
   }
 });
 
-// 🔹 Create stations with auto ID
+//  Create stations with auto ID
 app.post("/stations", async (req, res) => {
   const { NAME } = req.body;
 
@@ -223,7 +225,7 @@ app.post("/stations", async (req, res) => {
   }
 });
 
-// 🔹 Update station
+//  Update station
 app.put("/stations/:id", async (req, res) => {
   const { id } = req.params;
   const { NAME } = req.body;
@@ -266,7 +268,7 @@ app.put("/stations/:id", async (req, res) => {
   }
 });
 
-// 🔹 Delete station
+//  Delete station
 app.delete("/stations/:id", async (req, res) => {
   const { id } = req.params;
 
@@ -304,9 +306,236 @@ app.delete("/stations/:id", async (req, res) => {
   }
 });
 
-//สิ้นสุดส่วนของ API เพิ่ม ลบ แก้ไข ข้อมูลสถานี
+//=============================ส่วนของ API ตำแหน่งกับสิทธิ=====================================
+// ดึงข้อมูล POSITION พร้อม PERMISSION
+app.get("/POSITION", async (req, res) => {
+  let connection;
+  try {
+    connection = await oracledb.getConnection();
+    const result = await connection.execute(
+      `SELECT p.ID, 
+              p.NAME, 
+              per.ID AS PERMISSION_ID,
+              per.MGMT_STATION,
+              per.MGMT_ROUTE,
+              per.MGMT_CAR,
+              per.MGMT_TRIP,
+              per.MGMT_PERMISSION,
+              per.MGMT_EMPLOYEE,
+              per.MGMT_DEPARTMENT,
+              per.VIEWREPORT,
+              per.PROFILE,
+              per.WORK_SCHEDULE,
+              per.ASSIGNMENT,
+              per.CURRENTJOB
+       FROM POSITION p
+       LEFT JOIN PERMISSION per 
+         ON p.IDPERMISSION = per.ID`
+    );
 
-//ส่วนของ API แผนก
+    const POSITION = result.rows.map((row) => ({
+      ID: row[0],
+      NAME: row[1],
+      PERMISSION_ID: row[2],
+      MGMT_STATION: row[3],
+      MGMT_ROUTE: row[4],
+      MGMT_CAR: row[5],
+      MGMT_TRIP: row[6],
+      MGMT_PERMISSION: row[7],
+      MGMT_EMPLOYEE: row[8],
+      MGMT_DEPARTMENT: row[9],
+      VIEWREPORT: row[10],
+      PROFILE: row[11],
+      WORK_SCHEDULE: row[12],
+      ASSIGNMENT: row[13],
+      CURRENTJOB: row[14],
+    }));
+
+    res.json(POSITION);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("DB Error");
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+
+
+// เพิ่ม POSITION (สร้าง PERMISSION ไปพร้อมกัน)
+app.post("/POSITION", async (req, res) => {
+  const { NAME, permissions } = req.body; 
+  // permissions = object { MGMT_STATION, MGMT_ROUTE, ... }
+
+  let connection;
+  try {
+    connection = await oracledb.getConnection();
+
+    // หา id ใหม่สำหรับ PERMISSION
+    const resultPer = await connection.execute(`SELECT MAX(ID) FROM PERMISSION`);
+    let newPerId = "001";
+    if (resultPer.rows[0][0]) {
+      newPerId = (parseInt(resultPer.rows[0][0]) + 1).toString().padStart(3, "0");
+    }
+
+    // Insert PERMISSION
+    await connection.execute(
+      `INSERT INTO PERMISSION 
+        (ID, MGMT_STATION, MGMT_ROUTE, MGMT_CAR, MGMT_TRIP, MGMT_PERMISSION, 
+         MGMT_EMPLOYEE, MGMT_DEPARTMENT, VIEWREPORT, PROFILE, 
+         WORK_SCHEDULE, ASSIGNMENT, CURRENTJOB)
+       VALUES 
+        (:ID, :MGMT_STATION, :MGMT_ROUTE, :MGMT_CAR, :MGMT_TRIP, :MGMT_PERMISSION, 
+         :MGMT_EMPLOYEE, :MGMT_DEPARTMENT, :VIEWREPORT, :PROFILE, 
+         :WORK_SCHEDULE, :ASSIGNMENT, :CURRENTJOB)`,
+      {
+        ID: newPerId,
+        ...permissions,
+      }
+    );
+    await connection.commit();
+
+    // หา id ใหม่สำหรับ POSITION
+    const resultPos = await connection.execute(`SELECT MAX(ID) FROM POSITION`);
+    let newPosId = "001";
+    if (resultPos.rows[0][0]) {
+      newPosId = (parseInt(resultPos.rows[0][0]) + 1).toString().padStart(3, "0");
+    }
+
+    // Insert POSITION พร้อมเชื่อมกับ PERMISSION
+    await connection.execute(
+      `INSERT INTO POSITION (ID, NAME, IDPERMISSION) VALUES (:ID, :NAME, :IDPERMISSION)`,
+      { ID: newPosId, NAME, IDPERMISSION: newPerId },
+      { autoCommit: true }
+    );
+
+    res.json({ message: "POSITION inserted successfully!", ID: newPosId, PERMISSION_ID: newPerId });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("DB Insert Error");
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+
+// อัปเดต POSITION พร้อม PERMISSION
+app.put("/POSITION/:id", async (req, res) => {
+  const { id } = req.params;
+  const { NAME, permissions } = req.body; // permissions = object ของสิทธิ
+  let connection;
+
+  try {
+    connection = await oracledb.getConnection();
+
+    // อัปเดต POSITION
+    await connection.execute(
+      `UPDATE POSITION SET NAME = :NAME WHERE ID = :ID`,
+      { NAME, ID: id }
+    );
+
+    // อัปเดต PERMISSION ของตำแหน่งนี้
+    const result = await connection.execute(
+      `SELECT IDPERMISSION FROM POSITION WHERE ID = :ID`,
+      { ID: id }
+    );
+    const permissionId = result.rows[0] ? result.rows[0][0] : null;
+
+    if (permissionId && permissions) {
+      await connection.execute(
+        `UPDATE PERMISSION SET 
+          MGMT_STATION = :MGMT_STATION,
+          MGMT_ROUTE = :MGMT_ROUTE,
+          MGMT_CAR = :MGMT_CAR,
+          MGMT_TRIP = :MGMT_TRIP,
+          MGMT_PERMISSION = :MGMT_PERMISSION,
+          MGMT_EMPLOYEE = :MGMT_EMPLOYEE,
+          MGMT_DEPARTMENT = :MGMT_DEPARTMENT,
+          VIEWREPORT = :VIEWREPORT,
+          PROFILE = :PROFILE,
+          WORK_SCHEDULE = :WORK_SCHEDULE,
+          ASSIGNMENT = :ASSIGNMENT,
+          CURRENTJOB = :CURRENTJOB
+         WHERE ID = :ID`,
+        { ID: permissionId, ...permissions }
+      );
+    }
+
+    await connection.commit();
+    res.json({ message: "POSITION and PERMISSION updated successfully!" });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("DB Update Error");
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+
+
+// ลบ POSITION พร้อมลบ PERMISSION
+app.delete("/POSITION/:id", async (req, res) => {
+  const { id } = req.params;
+  let connection;
+
+  try {
+    connection = await oracledb.getConnection();
+
+    // หา IDPERMISSION ของตำแหน่งที่จะลบ
+    const result = await connection.execute(
+      `SELECT IDPERMISSION FROM POSITION WHERE ID = :ID`,
+      { ID: id }
+    );
+    const permissionId = result.rows[0] ? result.rows[0][0] : null;
+
+    // ลบตำแหน่ง
+    await connection.execute(
+      `DELETE FROM POSITION WHERE ID = :ID`,
+      { ID: id }
+    );
+
+    // ลบสิทธิ์ถ้ามี
+    if (permissionId) {
+      await connection.execute(
+        `DELETE FROM PERMISSION WHERE ID = :ID`,
+        { ID: permissionId }
+      );
+    }
+
+    await connection.commit();
+    res.json({ message: "POSITION and associated PERMISSION deleted successfully!" });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("DB Delete Error");
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+
+
+
+//================================ส่วนของ API ตำแหน่งสำหรับพนักงาน======================================
+app.get("/POSITION/simple", async (req, res) => {
+  let connection;
+  try {
+    connection = await oracledb.getConnection();
+    const result = await connection.execute(
+      `SELECT ID, NAME FROM POSITION`
+    );
+    const positions = result.rows.map(row => ({
+      ID: row[0],
+      NAME: row[1]
+    }));
+    res.json(positions);
+  } catch(err) {
+    console.error(err);
+    res.status(500).send("DB Error");
+  } finally {
+    if(connection) await connection.close();
+  }
+});
+
+
+//================================ส่วนของ API แผนก================================================
 // ดึงข้อมูล DEPARTMENT
 app.get("/DEPARTMENT", async (req, res) => {
   let connection;
@@ -317,7 +546,10 @@ app.get("/DEPARTMENT", async (req, res) => {
        NAME FROM DEPARTMENT
        `
     );
-    const DEPARTMENT = result.rows.map((row) => ({ ID: row[0], NAME: row[1] }));
+    const DEPARTMENT = result.rows.map((row) => ({ 
+      ID: row[0], 
+      NAME: row[1] 
+    }));
     res.json(DEPARTMENT);
   } catch (err) {
     console.error(err);
@@ -394,9 +626,9 @@ app.delete("/DEPARTMENT/:id", async (req, res) => {
   }
 });
 
-//สิ้นสุดส่วนของ API แผนก
 
-//ส่วนของ API พนักงาน
+
+//=================================ส่วนของ API พนักงาน========================================
 // ดึงข้อมูลพนักงาน
 app.get("/Employee", async (req, res) => {
   let connection;
@@ -431,6 +663,7 @@ app.get("/Employee", async (req, res) => {
       id_position: row[7],
       DEPARTMENT_NAME: row[8],
       POSITION_NAME: row[9],
+
     }));
 
     res.json(Employee);
@@ -570,31 +803,7 @@ app.delete("/Employee/:id", async (req, res) => {
   }
 });
 
-//สิ้นสุดส่วนของ API พนักงาน
-
-// ดึงข้อมูล POSITION
-app.get("/POSITION", async (req, res) => {
-  let connection;
-  try {
-    connection = await oracledb.getConnection();
-    const result = await connection.execute(
-      `SELECT ID, NAME,idpermission FROM POSITION`
-    );
-    const POSITION = result.rows.map((row) => ({
-      ID: row[0],
-      NAME: row[1],
-      idpermission: row[2],
-    }));
-    res.json(POSITION);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("DB Error");
-  } finally {
-    if (connection) await connection.close();
-  }
-});
-
-//ส่วนของ API การจัดการเส้นทางรถ
+//==========================ส่วนของ API การจัดการเส้นทางรถ=========================================
 
 // GET stations
 app.get("/stations", async (req, res) => {
@@ -827,7 +1036,8 @@ app.delete("/carroutes/:id", async (req, res) => {
   }
 });
 
-// ================== API ประเภทรถ ==================
+
+// ====================================== API ประเภทรถ ==================================================
 // ดึงข้อมูลประเภทรถทั้งหมด
 app.get("/TYPE_CAR", async (req, res) => {
   let connection;
@@ -998,4 +1208,8 @@ app.use((req, res) => {
     .status(404)
     .json({ error: `Endpoint ${req.method} ${req.url} not found` });
 });
-//สิ้นสุดส่วนของ API การจัดการเส้นทางรถ
+
+
+
+
+

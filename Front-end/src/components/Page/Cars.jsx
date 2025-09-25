@@ -148,7 +148,7 @@ function Cars() {
         <h2>จัดการรถ</h2>
 
         {/* ปุ่มเพิ่ม */}
-        <button className="btn-add" onClick={() => setShowModal(true)}>
+        <button className="butn-add" onClick={() => setShowModal(true)}>
           เพิ่มรถ
         </button>
 
@@ -171,7 +171,7 @@ function Cars() {
               <th>ทะเบียนรถ</th>
               <th>ประเภทรถ</th>
               <th>จำนวนที่นั่ง</th>
-              <th>จัดการ</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>

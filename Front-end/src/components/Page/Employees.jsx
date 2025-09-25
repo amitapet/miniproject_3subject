@@ -4,6 +4,7 @@ import { FaSearch } from "react-icons/fa";
 import { useEffect, useState } from "react";
 import "./Employees.css";
 
+
 function Employees() {
   const [employees, setEmployees] = useState([]);
   const [departments, setDepartments] = useState([]); // สำหรับ combobox
@@ -43,13 +44,14 @@ function Employees() {
   };
 
   const fetchPositions = async () => {
-    try {
-      const res = await axios.get("http://localhost:3000/POSITION"); 
-      setPositions(res.data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  try {
+    const res = await axios.get("http://localhost:3000/POSITION/simple"); 
+    setPositions(res.data);
+  } catch (err) {
+    console.error(err);
+  }
+};
+
 
   useEffect(() => {
     fetchEmployees();
