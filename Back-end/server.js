@@ -191,15 +191,23 @@ app.get("/assignmentdetail/:tripId", async (req, res) => {
     connection = await oracledb.getConnection(dbConfig);
 
     const result = await connection.execute(
-      `select c.tel , c.fname , 
-        c.lname , s.time_in , 
-        stop.time_in , r.seat , r.status
-      from RESERVE r
-        join CUSTOMER c on r.CUS_ID = c.id
-        join STOP_DURATION s on r.startt = s.id
-        join STOP_DURATION stop on r.stopt = stop.id
-      where r.TRIP_ID = :tripId`,
-      { tripId }, // bind parameter
+      `SELECT c.tel,
+              c.fname,
+              c.lname,
+              ss.name AS pickup_name,
+              sstops.name AS dropoff_name,
+              r.seat,
+              r.status
+       FROM RESERVE r
+       LEFT JOIN CUSTOMER c ON r.CUS_ID = c.id
+       LEFT JOIN STOP_DURATION sd ON r.startt = sd.id
+       LEFT JOIN STOP_DURATION stopd ON r.stopt = stopd.id
+       LEFT JOIN STOPS s ON sd.id_stops = s.id
+       LEFT JOIN STOPS stop ON stopd.id_stops = stop.id
+       LEFT JOIN STATION ss ON s.id = ss.ID
+       LEFT JOIN STATION sstops ON stop.id = sstops.ID
+       WHERE r.TRIP_ID = :tripId`,
+      { tripId },
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
 
@@ -211,6 +219,7 @@ app.get("/assignmentdetail/:tripId", async (req, res) => {
     if (connection) await connection.close();
   }
 });
+
 // end assignmentdetail
 
 //work
@@ -258,9 +267,9 @@ app.post("/work", async (req, res) => {
     );
 
     if (check.rows[0].CNT > 0) {
-      return res.status(400).json({ 
-        error: "งานนี้ถูกเริ่มแล้ว", 
-        details: "ไม่สามารถเริ่มงานซ้ำได้" 
+      return res.status(400).json({
+        error: "งานนี้ถูกเริ่มแล้ว",
+        details: "ไม่สามารถเริ่มงานซ้ำได้",
       });
     }
 
@@ -279,7 +288,6 @@ app.post("/work", async (req, res) => {
     if (connection) await connection.close();
   }
 });
-
 
 //end work
 
