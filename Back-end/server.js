@@ -369,7 +369,7 @@ app.get("/POSITION", async (req, res) => {
 // เพิ่ม POSITION (สร้าง PERMISSION ไปพร้อมกัน)
 app.post("/POSITION", async (req, res) => {
   const { NAME, permissions } = req.body; 
-  // permissions = object { MGMT_STATION, MGMT_ROUTE, ... }
+  
 
   let connection;
   try {
@@ -1213,4 +1213,4 @@ app.use((req, res) => {
     .status(404)
     .json({ error: `Endpoint ${req.method} ${req.url} not found` });
 });
-//สิ้นสุดส่วนของ API การจัดการเส้นทางรถ
+
