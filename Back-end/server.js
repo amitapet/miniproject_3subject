@@ -188,7 +188,7 @@ app.get("/assignment/:empId", async (req, res) => {
     const result = await connection.execute(
       `SELECT r.name_route, 
         t.id, to_char(t.date_trip,'dd/mm/yyyy') as tripDate, 
-        t.timeout, t.id_car, 
+        t.timeout, t.id_car, car.SEAT, 
         t.id_employee, ty.name, 
         COUNT(t.id) AS trip_count
       FROM trip t
@@ -198,7 +198,7 @@ app.get("/assignment/:empId", async (req, res) => {
       LEFT JOIN type_car ty ON car.id_typecar = ty.id
       WHERE t.id_employee = :empId
       GROUP BY r.name_route, t.id, t.date_trip, t.timeout, 
-        t.id_car, t.id_employee, ty.name
+        t.id_car, car.SEAT, t.id_employee, ty.name
       having t.id not in (select Trip_id from work)
       ORDER BY t.id`,
       { empId }, // bind parameter

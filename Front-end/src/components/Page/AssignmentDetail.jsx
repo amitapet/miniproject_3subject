@@ -31,12 +31,18 @@ function AssignmentDetail() {
   useEffect(() => {
     const fetchPassengers = async () => {
       try {
-        const res = await axios.get(`http://localhost:3000/assignmentdetail/${id}`);
+        const res = await axios.get(
+          `http://localhost:3000/assignmentdetail/${id}`
+        );
         setPassengers(res.data);
 
         // สร้าง option lists แบบ unique
-        setPickupOptions([...new Set(res.data.map((p) => p.PICKUP_NAME).filter(Boolean))]);
-        setDropoffOptions([...new Set(res.data.map((p) => p.DROPOFF_NAME).filter(Boolean))]);
+        setPickupOptions([
+          ...new Set(res.data.map((p) => p.PICKUP_NAME).filter(Boolean)),
+        ]);
+        setDropoffOptions([
+          ...new Set(res.data.map((p) => p.DROPOFF_NAME).filter(Boolean)),
+        ]);
       } catch (err) {
         console.error("❌ Fetch passengers error:", err);
       }
@@ -44,7 +50,9 @@ function AssignmentDetail() {
 
     const fetchSchedule = async () => {
       try {
-        const res = await axios.get(`http://localhost:3000/assignment/${empId}`);
+        const res = await axios.get(
+          `http://localhost:3000/assignment/${empId}`
+        );
         const trip = res.data.find((t) => String(t.ID) === String(id));
         setSchedule(trip);
       } catch (err) {
@@ -54,7 +62,9 @@ function AssignmentDetail() {
 
     const checkWork = async () => {
       try {
-        const res = await axios.get(`http://localhost:3000/work/check/${empId}`);
+        const res = await axios.get(
+          `http://localhost:3000/work/check/${empId}`
+        );
         if (res.data.hasWork) {
           setHasWork(true);
           setCurrentWorkTrip(res.data.tripId);
@@ -96,9 +106,17 @@ function AssignmentDetail() {
     );
   });
 
+  const bookedSeats = passengers
+    .filter((p) => p.STATUS?.toLowerCase() !== "cancel")
+    .reduce((total, p) => total + Number(p.SEAT || 0), 0);
+
+  const availableSeats = schedule ? schedule.SEAT - bookedSeats : 0;
+
   return (
     <div className="page-container">
-      <button className="btn-back" onClick={() => navigate(-1)}>⬅ กลับ</button>
+      <button className="btn-back" onClick={() => navigate(-1)}>
+        ⬅ กลับ
+      </button>
 
       {schedule && (
         <div className="job-info-card">
@@ -112,7 +130,11 @@ function AssignmentDetail() {
           <div className="job-extra">
             <p>ทะเบียนรถ: {schedule.ID_CAR}</p>
             <p>ประเภทรถ: {schedule.NAME}</p>
-            <p>ลูกค้าจองแล้ว : {passengers.reduce((total, p) => total + Number(p.SEAT || 0), 0)} ที่นั่ง</p>
+          </div>
+          <div className="job-extra">
+            <p>ที่นั่งทั้งหมด : {schedule.SEAT} ที่นั่ง</p>
+            <p>ลูกค้าจองแล้ว : {bookedSeats} ที่นั่ง</p>
+            <p>ที่ว่างเหลือ : {availableSeats} ที่นั่ง</p>
           </div>
         </div>
       )}
@@ -120,28 +142,41 @@ function AssignmentDetail() {
       <div className="search-box">
         <label>
           จุดรับ:
-          <select value={pickupSelect} onChange={(e) => setPickupSelect(e.target.value)}>
+          <select
+            value={pickupSelect}
+            onChange={(e) => setPickupSelect(e.target.value)}
+          >
             <option value="">ตั้งแต่ต้นทาง</option>
             {pickupOptions.map((pickup, idx) => (
-              <option key={idx} value={pickup}>{pickup}</option>
+              <option key={idx} value={pickup}>
+                {pickup}
+              </option>
             ))}
           </select>
         </label>
 
         <label>
           จุดส่ง:
-          <select value={dropoffSelect} onChange={(e) => setDropoffSelect(e.target.value)}>
+          <select
+            value={dropoffSelect}
+            onChange={(e) => setDropoffSelect(e.target.value)}
+          >
             <option value="">ถึงปลายทาง</option>
             {dropoffOptions.map((dropoff, idx) => (
-              <option key={idx} value={dropoff}>{dropoff}</option>
+              <option key={idx} value={dropoff}>
+                {dropoff}
+              </option>
             ))}
           </select>
         </label>
 
-        <button className="search-btn" onClick={() => {
-          setPickupFilter(pickupSelect);
-          setDropoffFilter(dropoffSelect);
-        }}>
+        <button
+          className="search-btn"
+          onClick={() => {
+            setPickupFilter(pickupSelect);
+            setDropoffFilter(dropoffSelect);
+          }}
+        >
           <FaSearch />
         </button>
       </div>
@@ -164,7 +199,9 @@ function AssignmentDetail() {
             <tr key={i}>
               <td>{i + 1}</td>
               <td>{p.TEL}</td>
-              <td>{p.FNAME} {p.LNAME}</td>
+              <td>
+                {p.FNAME} {p.LNAME}
+              </td>
               <td>{p.PICKUP_NAME}</td>
               <td>{p.DROPOFF_NAME}</td>
               <td>{p.SEAT}</td>
@@ -188,8 +225,15 @@ function AssignmentDetail() {
             <h3>ยืนยันการเริ่มทำงานหรือไม่</h3>
             <p>หากยืนยัน คุณไม่สามารถย้อนกลับได้</p>
             <div className="modal-actions">
-              <button className="btn-confirm" onClick={handleConfirm}>ยืนยัน</button>
-              <button className="btn-cancel" onClick={() => setShowModal(false)}>ยกเลิก</button>
+              <button className="btn-confirm" onClick={handleConfirm}>
+                ยืนยัน
+              </button>
+              <button
+                className="btn-cancel"
+                onClick={() => setShowModal(false)}
+              >
+                ยกเลิก
+              </button>
             </div>
           </div>
         </div>
