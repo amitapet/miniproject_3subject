@@ -15,12 +15,13 @@ function CarRoutes() {
     const [showForm, setShowForm] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
 
+
     // Fetch routes and stations from the API
     const fetchData = async () => {
         try {
             const [routesRes, stationsRes] = await Promise.all([
                 axios.get("http://localhost:3000/carroutes"),
-                axios.get("http://localhost:3000/stations")
+                axios.get("http://localhost:3000/stations"),
             ]);
             setRoutes(routesRes.data);
             setStations(stationsRes.data);
@@ -30,17 +31,35 @@ function CarRoutes() {
         }
     };
 
+    // Fetch stations for a specific route (for editing)
+    const fetchRouteStations = async () => {
+        try {
+            console.log('Fetching route stations...');
+            const response = await axios.get('http://localhost:3000/carroutes');
+            console.log('Success:', response.data);
+            // ประมวลผลข้อมูล
+        } catch (error) {
+            console.error('Error details:', {
+                message: error.message,
+                status: error.response?.status,
+                data: error.response?.data,
+                url: error.config?.url
+            });
+        }
+    };
+
     useEffect(() => {
         fetchData();
+        fetchRouteStations();
     }, []);
 
-    // Recalculate total time whenever selectedStations changes
+    // คำนวณเวลารวมเมื่อ selectedStations เปลี่ยนแปลง
     useEffect(() => {
         const total = form.selectedStations.reduce((sum, station) => sum + (parseInt(station.time) || 0), 0);
         setForm(prevForm => ({ ...prevForm, TOTALSUM_TIME: total }));
     }, [form.selectedStations]);
 
-    // Handle form input changes
+    // ปรับปรุงฟอร์ม เมื่อมีการเปลี่ยนแปลง input
     const handleChange = (e) => {
         const { name, value } = e.target;
         setForm({ ...form, [name]: value });
@@ -54,61 +73,62 @@ function CarRoutes() {
         });
     };
 
-    // Update station selection for a specific row
+    // อัปเดตสถานีที่เลือกในแถวที่ระบุ
     const handleStationChange = (index, value) => {
         const newStations = [...form.selectedStations];
         newStations[index].stationId = value;
         setForm({ ...form, selectedStations: newStations });
     };
 
-    // Update travel time for a specific row
+    // อัปเดตเวลาในแถวที่ระบุ
     const handleTimeChange = (index, value) => {
         const newStations = [...form.selectedStations];
         newStations[index].time = parseInt(value, 10) || 0;
         setForm({ ...form, selectedStations: newStations });
     };
 
-    // Remove a station row
+    // ลบแถวสถานีที่ระบุ
     const handleRemoveStation = (index) => {
         const newStations = form.selectedStations.filter((_, i) => i !== index);
         setForm({ ...form, selectedStations: newStations });
     };
 
-    // Handle form submission (add or update)
+    //แก้ไข เพิ่มเส้นทาง
+    // แก้ส่วน handleSubmit
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
+            const payload = {
+                nameRoute: form.NAME_ROUTE,
+                totalTime: form.TOTALSUM_TIME || 0,
+                stations: form.selectedStations.map((s, idx) => ({
+                    stops_id: s.stationId,
+                    station_time: s.time,
+                    seq_no: idx + 1,
+                }))
+            };
+
+            console.log("Sending payload:", payload); // Debug
+
             if (editingId) {
-                // Update route
-                await axios.put(`http://localhost:3000/carroutes/${editingId}`, {
-                    nameRoute: form.NAME_ROUTE,
-                    totalTime: form.TOTALSUM_TIME
-                });
-                Swal.fire("สำเร็จ", "อัปเดตเส้นทางเรียบร้อยแล้ว!", "success");
+                const response = await axios.put(`http://localhost:3000/carroutes/${editingId}`, payload);
+                console.log("Update response:", response.data); // Debug
             } else {
-                // Add new route
-                const stationsWithTime = form.selectedStations.map(s => ({
-                    id: s.stationId,
-                    time: s.time
-                }));
-                await axios.post("http://localhost:3000/carroutes", {
+                const response = await axios.post("http://localhost:3000/carroutes", {
                     id: form.ID,
-                    nameRoute: form.NAME_ROUTE,
-                    stations: stationsWithTime,
-                    totalTime: form.TOTALSUM_TIME
+                    ...payload
                 });
-                Swal.fire("สำเร็จ", "เพิ่มเส้นทางเรียบร้อยแล้ว!", "success");
+                console.log("Create response:", response.data); // Debug
             }
-            resetForm();
-            fetchData();
-        } catch (err) {
-            console.error("Submission error:", err);
-            const errorMsg = err.response?.data?.details || "การดำเนินการล้มเหลว";
-            Swal.fire("ผิดพลาด", errorMsg, "error");
+
+            Swal.fire("สำเร็จ", "บันทึกข้อมูลเรียบร้อยแล้ว!", "success");
+        } catch (error) {
+            console.error("Error details:", error.response?.data || error.message);
+            Swal.fire("ผิดพลาด", "เกิดข้อผิดพลาดในการบันทึก", "error");
         }
     };
 
-    // Handle "Edit" button click
+    // เวลาแก้ไขเส้นทาง โหลด stations จาก route_stations ด้วย
     const handleEdit = (route) => {
         setForm({
             ID: route.ID,
@@ -118,6 +138,7 @@ function CarRoutes() {
         setEditingId(route.ID);
         setShowForm(true);
     };
+
 
     // Handle "Delete" button click
     const handleDelete = async (id) => {
@@ -137,7 +158,7 @@ function CarRoutes() {
                 fetchData();
             } catch (err) {
                 console.error("Deletion error:", err);
-                Swal.fire("ผิดพลาด", "การลบล้มเหลว", "error");
+                Swal.fire("ผิดพลาด", "การลบล้มเหลว ในเส้นทางมีจุดอยู่", "error");
             }
         }
     };
@@ -164,7 +185,7 @@ function CarRoutes() {
         setEditingId(null);
     };
 
-    // Filter routes based on search term
+    // ค้นหาเส้นทาง
     const filteredRoutes = routes.filter((route) =>
         route.NAME_ROUTE.toLowerCase().includes(searchTerm.toLowerCase()) ||
         route.ID.toLowerCase().includes(searchTerm.toLowerCase())

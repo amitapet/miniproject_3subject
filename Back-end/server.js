@@ -368,8 +368,8 @@ app.get("/POSITION", async (req, res) => {
 
 // เพิ่ม POSITION (สร้าง PERMISSION ไปพร้อมกัน)
 app.post("/POSITION", async (req, res) => {
-  const { NAME, permissions } = req.body; 
-  
+  const { NAME, permissions } = req.body;
+
 
   let connection;
   try {
@@ -531,11 +531,11 @@ app.get("/POSITION/simple", async (req, res) => {
       NAME: row[1]
     }));
     res.json(positions);
-  } catch(err) {
+  } catch (err) {
     console.error(err);
     res.status(500).send("DB Error");
   } finally {
-    if(connection) await connection.close();
+    if (connection) await connection.close();
   }
 });
 
@@ -551,9 +551,9 @@ app.get("/DEPARTMENT", async (req, res) => {
        NAME FROM DEPARTMENT
        `
     );
-    const DEPARTMENT = result.rows.map((row) => ({ 
-      ID: row[0], 
-      NAME: row[1] 
+    const DEPARTMENT = result.rows.map((row) => ({
+      ID: row[0],
+      NAME: row[1]
     }));
     res.json(DEPARTMENT);
   } catch (err) {
@@ -816,7 +816,6 @@ app.get("/stations", async (req, res) => {
   try {
     console.log("📝 Fetching stations...");
     connection = await oracledb.getConnection(dbConfig);
-
     const result = await connection.execute(
       `SELECT ID, NAME FROM STATION ORDER BY ID`,
       [],
@@ -898,7 +897,6 @@ app.post("/carroutes", async (req, res) => {
     console.log("🔌 Connecting to database...");
     connection = await oracledb.getConnection(dbConfig);
     console.log("✅ Database connected");
-
     let routeId = id && id.trim() ? id.trim() : null;
 
     // Generate ID if not provided
@@ -916,21 +914,44 @@ app.post("/carroutes", async (req, res) => {
     // Insert Route
     console.log("💾 Inserting route...");
     const insertResult = await connection.execute(
-      `INSERT INTO ROUTE (ID, NAME_ROUTE, TOTALSUM_TIME) VALUES (:ID, :NAME_ROUTE, :TOTALSUM_TIME)`,
+      `INSERT INTO ROUTE (ID, NAME_ROUTE, TOTALSUM_TIME) 
+      VALUES (:ID, :NAME_ROUTE, :TOTALSUM_TIME)`,
       {
         ID: routeId,
         NAME_ROUTE: nameRoute.trim(),
         TOTALSUM_TIME: totalTime || 0,
-      },
-      { autoCommit: true }
+      }
     );
 
     console.log(
       `✅ Route inserted successfully. Rows affected: ${insertResult.rowsAffected}`
     );
 
+    // Insert stations (executeMany)
+    const binds = stations.map((s) => ({
+      routeId: routeId,
+      stopsId: s.stops_id,
+      stationTime: s.station_time,
+      seqNo: s.seq_no,
+    }));
+
+    console.log("Binds:", binds);
+
+    const stationResult = await connection.executeMany(
+      `INSERT INTO ROUTE_STATIONS (ID, ID_ROUTE, STOPS_ID, STATION_TIME, SEQ_NO)
+   VALUES (route_stations_seq.NEXTVAL, :routeId, :stopsId, :stationTime, :seqNo)`,
+      binds
+    );
+
+    console.log(
+      `✅ Stations inserted successfully. Rows affected: ${stationResult.rowsAffected}`
+    );
+
+    // Commit ทั้งหมด
+    await connection.commit();
+
     res.json({
-      message: "Route created successfully!",
+      message: "Route and stations created successfully!",
       routeId: routeId,
       stationCount: stations.length,
       totalTime: totalTime || 0,
@@ -942,7 +963,7 @@ app.post("/carroutes", async (req, res) => {
     if (err.message && err.message.includes("ORA-00001")) {
       return res.status(400).json({
         error: "Route ID already exists",
-        details: `Route with ID '${routeId}' already exists. Please use a different ID.`,
+        details: `Route with ID '${id}' already exists. Please use a different ID.`,
       });
     }
 
@@ -961,6 +982,8 @@ app.post("/carroutes", async (req, res) => {
     }
   }
 });
+
+
 
 // UPDATE route
 app.put("/carroutes/:id", async (req, res) => {
@@ -1009,21 +1032,17 @@ app.put("/carroutes/:id", async (req, res) => {
 // DELETE route
 app.delete("/carroutes/:id", async (req, res) => {
   const { id } = req.params;
-
   let connection;
   try {
     connection = await oracledb.getConnection(dbConfig);
-
     const result = await connection.execute(
       `DELETE FROM ROUTE WHERE ID = :id`,
       { id },
       { autoCommit: true }
     );
-
     if (result.rowsAffected === 0) {
       return res.status(404).json({ error: "Route not found" });
     }
-
     res.json({ message: "Route deleted successfully!" });
   } catch (err) {
     console.error("❌ DELETE /carroutes/:id error:", err);
