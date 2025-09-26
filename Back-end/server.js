@@ -259,14 +259,14 @@ app.get("/assignmentdetail/:tripId", async (req, res) => {
 app.get("/workdetail/:tripId", async (req, res) => {
   let connection;
   try {
-    const tripId = req.params.tripId; // ดึงค่าจาก URL เช่น /assignment/E0002
+    const tripId = req.params.tripId;
 
     connection = await oracledb.getConnection(dbConfig);
 
     const result = await connection.execute(
       `SELECT r.name_route, 
         t.id, to_char(t.date_trip,'dd/mm/yyyy') as tripDate, 
-        t.timeout, t.id_car, 
+        t.timeout, t.id_car, car.SEAT,
         t.id_employee, ty.name, 
         COUNT(t.id) AS trip_count
       FROM trip t
@@ -276,8 +276,7 @@ app.get("/workdetail/:tripId", async (req, res) => {
       LEFT JOIN type_car ty ON car.id_typecar = ty.id
       WHERE t.id = :tripId
       GROUP BY r.name_route, t.id, t.date_trip, t.timeout, 
-        t.id_car, t.id_employee, ty.name
-      having t.id not in (select Trip_id from work)
+        t.id_car, car.SEAT, t.id_employee, ty.name
       ORDER BY t.id`,
       { tripId }, // bind parameter
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
@@ -325,7 +324,7 @@ app.get("/work/check/:empId", async (req, res) => {
     const result = await connection.execute(
       `SELECT trip_id 
        FROM work 
-       WHERE emp_id = :empId`,
+       WHERE emp_id = :empId and status = 'doing'`,
       { empId },
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );

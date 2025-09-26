@@ -82,6 +82,12 @@ function WorkDetail() {
     );
   });
 
+  const bookedSeats = passengers
+    .filter((p) => p.STATUS?.toLowerCase() !== "cancel")
+    .reduce((total, p) => total + Number(p.SEAT || 0), 0);
+
+  const availableSeats = schedule ? schedule.SEAT - bookedSeats : 0;
+
   return (
     <div className="page-container">
       <button className="btn-back" onClick={() => navigate(-1)}>
@@ -100,11 +106,11 @@ function WorkDetail() {
           <div className="job-extra">
             <p>ทะเบียนรถ: {schedule.ID_CAR}</p>
             <p>ประเภทรถ: {schedule.NAME}</p>
-            <p>
-              ลูกค้าจองแล้ว :{" "}
-              {passengers.reduce((total, p) => total + Number(p.SEAT || 0), 0)}{" "}
-              ที่นั่ง
-            </p>
+          </div>
+          <div className="job-extra">
+            <p>ที่นั่งทั้งหมด : {schedule.SEAT} ที่นั่ง</p>
+            <p>ลูกค้าจองแล้ว : {bookedSeats} ที่นั่ง</p>
+            <p>ที่ว่างเหลือ : {availableSeats} ที่นั่ง</p>
           </div>
         </div>
       )}
