@@ -1,11 +1,12 @@
-/*Check_02*/
 /* พื้นหลังหน้าหลัก */
+
 .page-container {
   min-height: 90vh;
-  min-width: 160vh;
+  min-width: 130vh;
   background-color: #f2f6fb; /* เทาอ่อน */
   padding: 24px;
   font-family: "Tahoma", sans-serif;
+  border-radius: 10px;
 }
 
 .nowork {
@@ -156,6 +157,7 @@
 /* Pagination */
 .page-container {
   position: relative;
+  
 }
 
 .pagination {
@@ -169,11 +171,13 @@
   font-size: 14px;
   color: #333;
   box-shadow: 0 -1px 5px rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
 }
 
 .pagination button {
   margin: 0 5px;
   padding: 5px 10px;
+  border-radius: 5px;
 }
 
 .pagination .active-page {
