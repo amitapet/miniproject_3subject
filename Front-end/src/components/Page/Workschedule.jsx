@@ -74,7 +74,7 @@ function Workschedule() {
   return (
     <>
       <Sidebar />
-      <title>งานที่ได้รับมอบหมาย</title>
+      <title>ตารางงาน</title>
       <div className="page-container">
         {/* Search Box */}
         <div className="search-box">
