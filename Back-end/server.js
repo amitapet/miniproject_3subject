@@ -235,10 +235,10 @@ app.get("/assignmentdetail/:tripId", async (req, res) => {
        LEFT JOIN CUSTOMER c ON r.CUS_ID = c.id
        LEFT JOIN STOP_DURATION sd ON r.startt = sd.id
        LEFT JOIN STOP_DURATION stopd ON r.stopt = stopd.id
-       LEFT JOIN STOPS s ON sd.id_stops = s.id
-       LEFT JOIN STOPS stop ON stopd.id_stops = stop.id
-       LEFT JOIN STATION ss ON s.id = ss.ID
-       LEFT JOIN STATION sstops ON stop.id = sstops.ID
+       LEFT JOIN Route_stations s ON sd.id_stops = s.id
+       LEFT JOIN Route_stations stop ON stopd.id_stops = stop.id
+       LEFT JOIN STATION ss ON s.stops_id = ss.ID
+       LEFT JOIN STATION sstops ON stop.stops_id = sstops.ID
        WHERE r.TRIP_ID = :tripId`,
       { tripId },
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
