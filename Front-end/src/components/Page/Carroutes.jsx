@@ -16,7 +16,7 @@ function CarRoutes() {
     const [searchTerm, setSearchTerm] = useState("");
 
 
-    // Fetch routes and stations from the API
+    // เรียกดูข้อมูลเส้นทาง และ สถานี
     const fetchData = async () => {
         try {
             const [routesRes, stationsRes] = await Promise.all([
@@ -30,30 +30,46 @@ function CarRoutes() {
             Swal.fire("Error", "Failed to fetch data from the server.", "error");
         }
     };
-
-    // Fetch stations for a specific route (for editing)
-    const fetchRouteStations = async () => {
+    // เรียกดูข้อมูล route_stations ตอนแก้ไข
+    const fetchRouteStations = async (routeId) => {
         try {
-            console.log('Fetching route stations...');
-            const response = await axios.get('http://localhost:3000/carroutes');
-            console.log('Success:', response.data);
-            // ประมวลผลข้อมูล
+            const response = await axios.get(`http://localhost:3000/route_stations/${routeId}`);
+            return response.data.map(rs => ({
+                stationId: rs.STOPS_ID,
+                time: rs.STATION_TIME,
+                seq_no: rs.SEQ_NO
+            }));
         } catch (error) {
-            console.error('Error details:', {
-                message: error.message,
-                status: error.response?.status,
-                data: error.response?.data,
-                url: error.config?.url
-            });
+            console.error('❌ fetchRouteStations error:', error.response?.data || error.message);
+            return [];
         }
     };
+
+    // เวลาแก้ไขเส้นทาง โหลด stations จาก route_stations ด้วย
+    const handleEdit = async (route) => {
+        try {
+            const routeStations = await fetchRouteStations(route.ID);
+
+            setForm({
+                ID: route.ID,
+                NAME_ROUTE: route.NAME_ROUTE,
+                selectedStations: routeStations
+            });
+            setEditingId(route.ID);
+            setShowForm(true);
+        } catch (err) {
+            console.error("❌ handleEdit error:", err);
+            Swal.fire("ผิดพลาด", "โหลดข้อมูลจุดจอดไม่สำเร็จ", "error");
+        }
+    };
+
 
     useEffect(() => {
         fetchData();
         fetchRouteStations();
     }, []);
 
-    // คำนวณเวลารวมเมื่อ selectedStations เปลี่ยนแปลง
+    // คำนวณเวลารวมเมื่อมีการเปลี่ยนแปลง
     useEffect(() => {
         const total = form.selectedStations.reduce((sum, station) => sum + (parseInt(station.time) || 0), 0);
         setForm(prevForm => ({ ...prevForm, TOTALSUM_TIME: total }));
@@ -65,7 +81,7 @@ function CarRoutes() {
         setForm({ ...form, [name]: value });
     };
 
-    // Add a new station row
+    // เพิ่มแถวสถานีใหม่
     const handleAddStation = () => {
         setForm({
             ...form,
@@ -93,8 +109,7 @@ function CarRoutes() {
         setForm({ ...form, selectedStations: newStations });
     };
 
-    //แก้ไข เพิ่มเส้นทาง
-    // แก้ส่วน handleSubmit
+    // ปุมบันทึก
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
@@ -108,39 +123,26 @@ function CarRoutes() {
                 }))
             };
 
-            console.log("Sending payload:", payload); // Debug
-
             if (editingId) {
                 const response = await axios.put(`http://localhost:3000/carroutes/${editingId}`, payload);
-                console.log("Update response:", response.data); // Debug
+                console.log("Update response:", response.data);
             } else {
                 const response = await axios.post("http://localhost:3000/carroutes", {
                     id: form.ID,
                     ...payload
                 });
-                console.log("Create response:", response.data); // Debug
+                console.log("Create response:", response.data);
             }
 
             Swal.fire("สำเร็จ", "บันทึกข้อมูลเรียบร้อยแล้ว!", "success");
         } catch (error) {
             console.error("Error details:", error.response?.data || error.message);
-            Swal.fire("ผิดพลาด", "เกิดข้อผิดพลาดในการบันทึก", "error");
+            Swal.fire("ผิดพลาด", "เกิดข้อผิดพลาดในการบันทึก ใส่จุดอย่างน้อย 1 จุด", "error");
         }
     };
 
-    // เวลาแก้ไขเส้นทาง โหลด stations จาก route_stations ด้วย
-    const handleEdit = (route) => {
-        setForm({
-            ID: route.ID,
-            NAME_ROUTE: route.NAME_ROUTE,
-            selectedStations: route.STATIONS || [],
-        });
-        setEditingId(route.ID);
-        setShowForm(true);
-    };
 
-
-    // Handle "Delete" button click
+    // ปุ่มลบเส้นทาง
     const handleDelete = async (id) => {
         const result = await Swal.fire({
             title: "คุณแน่ใจหรือไม่?",
@@ -163,19 +165,19 @@ function CarRoutes() {
         }
     };
 
-    // Show the add form
+    // ป๊อปอัพฟอร์มเพิ่มเส้นทางใหม่
     const handleAddNew = () => {
         resetForm();
         setShowForm(true);
     };
 
-    // Cancel and close the form
+    // ยกเลิกป๊อปอัพฟอร์ม
     const handleCancel = () => {
         resetForm();
         setShowForm(false);
     };
 
-    // Reset form state to initial values
+    // ตั้งค่าเริ่มต้นฟอร์ม
     const resetForm = () => {
         setForm({
             ID: "",
@@ -193,7 +195,6 @@ function CarRoutes() {
 
     return (
         <div className="car-routes-container">
-            {/* ... (existing table and header) ... */}
             <div className="header">
                 <h1>จัดการเส้นทางรถ</h1>
                 <button className="add-button" onClick={handleAddNew}>

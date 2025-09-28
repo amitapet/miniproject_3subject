@@ -24,7 +24,7 @@ const dbConfig = {
   password: "64812",
   connectString: `(DESCRIPTION=
     (ADDRESS=(PROTOCOL=TCP)(HOST=203.188.54.7)(PORT=1521))
-    (CONNECT_DATA=(SID=Database))
+    (CONNECT_DATA=(SID=Database3))
   )`,
 };
 
@@ -809,8 +809,7 @@ app.delete("/Employee/:id", async (req, res) => {
 });
 
 //==========================ส่วนของ API การจัดการเส้นทางรถ=========================================
-
-// GET stations
+// ดึงข้อมูลสถานี
 app.get("/stations", async (req, res) => {
   let connection;
   try {
@@ -842,7 +841,7 @@ app.get("/stations", async (req, res) => {
   }
 });
 
-// GET all routes
+// ดึงข้อมูลเส้นทางรถ
 app.get("/carroutes", async (req, res) => {
   let connection;
   try {
@@ -874,14 +873,15 @@ app.get("/carroutes", async (req, res) => {
   }
 });
 
-// CREATE new route
+
+// เพิ่มเส้นทางรถ
 app.post("/carroutes", async (req, res) => {
   console.log("📝 POST /carroutes request received");
   console.log("Request body:", JSON.stringify(req.body, null, 2));
 
   const { id, nameRoute, stations, totalTime } = req.body;
 
-  // Validation
+  // ตรวจสอบข้อมูล
   if (!nameRoute || nameRoute.trim() === "") {
     console.log("❌ Validation failed: nameRoute is required");
     return res.status(400).json({ error: "Route name is required" });
@@ -899,18 +899,6 @@ app.post("/carroutes", async (req, res) => {
     console.log("✅ Database connected");
     let routeId = id && id.trim() ? id.trim() : null;
 
-    // Generate ID if not provided
-    if (!routeId) {
-      console.log("🔢 Generating new route ID...");
-      const maxResult = await connection.execute(
-        `SELECT NVL(MAX(TO_NUMBER(ID)), 0) AS MAX_ID FROM ROUTE`,
-        [],
-        { outFormat: oracledb.OUT_FORMAT_OBJECT }
-      );
-      routeId = String(maxResult.rows[0].MAX_ID + 1).padStart(3, "0");
-      console.log(`✅ Generated ID: ${routeId}`);
-    }
-
     // Insert Route
     console.log("💾 Inserting route...");
     const insertResult = await connection.execute(
@@ -927,14 +915,13 @@ app.post("/carroutes", async (req, res) => {
       `✅ Route inserted successfully. Rows affected: ${insertResult.rowsAffected}`
     );
 
-    // Insert stations (executeMany)
+    // แทรก stations
     const binds = stations.map((s) => ({
       routeId: routeId,
       stopsId: s.stops_id,
       stationTime: s.station_time,
       seqNo: s.seq_no,
     }));
-
     console.log("Binds:", binds);
 
     const stationResult = await connection.executeMany(
@@ -959,7 +946,7 @@ app.post("/carroutes", async (req, res) => {
   } catch (err) {
     console.error("❌ POST /carroutes error:", err);
 
-    // Check if it's a duplicate key error
+    // ตรวจสอบ ID ซ้ำ
     if (err.message && err.message.includes("ORA-00001")) {
       return res.status(400).json({
         error: "Route ID already exists",
@@ -983,9 +970,77 @@ app.post("/carroutes", async (req, res) => {
   }
 });
 
+// ดึงข้อมูลเส้นทางรถจาก ID
+app.get("/carroutes/:id", async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    console.log("📝 Fetching routes for ID:", id);
+    connection = await oracledb.getConnection(dbConfig);
+    const result = await connection.execute(
+      `SELECT ID, STOPS_ID, ID_ROUTE, STATION_TIME , SEQ_NO
+       FROM ROUTE_STATIONS 
+       WHERE ID_ROUTE = :id
+       ORDER BY SEQ_NO`,
+      [id], // 
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
 
+    console.log(`✅ Found ${result.rows.length} ROUTE_STATIONS`);
+    res.json(result.rows);
+  } catch (err) {
+    console.error("❌ GET /carroutes/:id error:", err);
+    res.status(500).json({
+      error: "Database query failed",
+      details: err.message,
+    });
+  } finally {
+    if (connection) {
+      try {
+        await connection.close();
+      } catch (closeErr) {
+        console.error("Connection close error:", closeErr);
+      }
+    }
+  }
+});
 
-// UPDATE route
+// ดึงข้อมูลจากตาราง route_stations โดย id
+app.get("/route_stations/:id", async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    console.log("📝 Fetching routes for ID:", id);
+    connection = await oracledb.getConnection(dbConfig);
+    const result = await connection.execute(
+      `SELECT ID, ID_ROUTE , STOPS_ID, STATION_TIME , SEQ_NO
+       FROM ROUTE_STATIONS 
+       WHERE ID_ROUTE = : ID
+       ORDER BY SEQ_NO`,
+      [id],
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    console.log(`✅ Found ${result.rows.length} ROUTE_STATIONS`);
+    res.json(result.rows);
+  } catch (err) {
+    console.error("❌ GET /route_stations error:", err);
+    res.status(500).json({
+      error: "Database query failed",
+      details: err.message,
+    });
+  } finally {
+    if (connection) {
+      try {
+        await connection.close();
+      } catch (closeErr) {
+        console.error("Connection close error:", closeErr);
+      }
+    }
+  }
+});
+
+// แก้ไขเส้นทางรถ
 app.put("/carroutes/:id", async (req, res) => {
   const { id } = req.params;
   const { nameRoute, totalTime } = req.body;
@@ -1008,6 +1063,7 @@ app.put("/carroutes/:id", async (req, res) => {
       { autoCommit: true }
     );
 
+
     if (result.rowsAffected === 0) {
       return res.status(404).json({ error: "Route not found" });
     }
@@ -1029,7 +1085,7 @@ app.put("/carroutes/:id", async (req, res) => {
   }
 });
 
-// DELETE route
+// ลบเส้นทางรถ
 app.delete("/carroutes/:id", async (req, res) => {
   const { id } = req.params;
   let connection;
