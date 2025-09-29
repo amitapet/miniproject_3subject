@@ -4,10 +4,12 @@ import axios from "axios";
 import {
     BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid, ResponsiveContainer
 } from "recharts";
+import styles from "./Report1.module.css";
 
 function Report1() {
     const [data, setData] = useState([]);
     const [year, setYear] = useState(2568);
+    const [market, setMarket] = useState("ขาขึ้น");
 
     useEffect(() => {
         axios.get(`http://localhost:3000/reports?year=${year}`)
@@ -15,11 +17,16 @@ function Report1() {
             .catch((err) => console.error(err));
     }, [year]);
 
-    return (
-        <div style={{ padding: "20px" }}>
-            <h1>📊 รายงานผู้โดยสาร ปี {year}</h1>
+    useEffect(() => {
+        axios.get(`http://localhost:3000/reports?year=${year}&market=${market}`)
+            .then((res) => setData(res.data))
+            .catch((err) => console.error(err));
+    }, [market, year]);
 
-            {/* เลือกปี */}
+    return (
+        <div className={styles.container}>
+            <h1 className={styles.title}>📊 รายงานผู้โดยสาร ปี {year}</h1>
+
             <div>
                 <label>เลือกปี: </label>
                 <select value={year} onChange={(e) => setYear(e.target.value)}>
@@ -28,10 +35,18 @@ function Report1() {
                 </select>
             </div>
 
+            <div>
+                <label>เลือกขาขึ้น-ลง: </label>
+                <select value={market} onChange={(e) => setMarket(e.target.value)}>
+                    <option value="ขาขึ้น">ขาขึ้น</option>
+                    <option value="ขาลง">ขาลง</option>
+                </select>
+            </div>
+
             {/* ตารางรายงาน */}
-            <table border="1" cellPadding="8" style={{ marginTop: "20px", borderCollapse: "collapse" }}>
-                <thead>
-                    <tr>
+            <table className={styles.table}>
+                <thead >
+                    <tr >
                         <th>สถานี</th>
                         <th>เดือน</th>
                         <th>ขึ้น (คน)</th>
@@ -39,19 +54,41 @@ function Report1() {
                     </tr>
                 </thead>
                 <tbody>
-                    {data.map((row, idx) => (
-                        <tr key={idx}>
-                            <td>{row.STATION_NAME}</td>
-                            <td>{row.MONTH}</td>
-                            <td>{row.PASSENGER_IN}</td>
-                            <td>{row.PASSENGER_OUT}</td>
-                        </tr>
-                    ))}
+                    {Object.values(
+                        data.reduce((acc, row) => {
+                            if (!acc[row.STATION_NAME]) acc[row.STATION_NAME] = [];
+                            acc[row.STATION_NAME].push(row);
+                            return acc;
+                        }, {})
+                    ).map((rows, idx) => {
+                        const totalIn = rows.reduce((sum, r) => sum + r.PASSENGER_IN, 0);
+                        const totalOut = rows.reduce((sum, r) => sum + r.PASSENGER_OUT, 0);
+
+                        return (
+                            <React.Fragment key={idx}>
+                                {rows.map((row, i) => (
+                                    <tr key={i}>
+                                        <td>{row.STATION_NAME}</td>
+                                        <td>{row.MONTH}</td>
+                                        <td>{row.PASSENGER_IN}</td>
+                                        <td>{row.PASSENGER_OUT}</td>
+                                        <td>{row.PASSENGER_IN + row.PASSENGER_OUT}</td>
+                                    </tr>
+                                ))}
+                                <tr className={styles.totalRow}>
+                                    <td colSpan="2">รวม {rows[0].STATION_NAME}</td>
+                                    <td>{totalIn}</td>
+                                    <td>{totalOut}</td>
+                                    <td>{totalIn + totalOut}</td>
+                                </tr>
+                            </React.Fragment>
+                        );
+                    })}
                 </tbody>
             </table>
 
             {/* กราฟ ผู้โดยสารขึ้น */}
-            <h2 style={{ marginTop: "30px" }}>จำนวนผู้โดยสารขึ้น รายเดือน ปี {year}</h2>
+            <h2 className={styles.chartTitle}>จำนวนผู้โดยสารขึ้น รายเดือน ปี {year}</h2>
             <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -64,7 +101,7 @@ function Report1() {
             </ResponsiveContainer>
 
             {/* กราฟ ผู้โดยสารลง */}
-            <h2 style={{ marginTop: "30px" }}>จำนวนผู้โดยสารลง รายเดือน ปี {year}</h2>
+            <h2 className={styles.chartTitle}>จำนวนผู้โดยสารลง รายเดือน ปี {year}</h2>
             <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" />

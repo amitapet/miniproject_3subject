@@ -982,7 +982,7 @@ app.get("/carroutes/:id", async (req, res) => {
        FROM ROUTE_STATIONS 
        WHERE ID_ROUTE = :id
        ORDER BY SEQ_NO`,
-      [id], // 
+      [id],
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
 
@@ -1040,10 +1040,10 @@ app.get("/route_stations/:id", async (req, res) => {
   }
 });
 
-// แก้ไขเส้นทางรถ
+// แก้ไขเส้นทางรถ + stations
 app.put("/carroutes/:id", async (req, res) => {
   const { id } = req.params;
-  const { nameRoute, totalTime } = req.body;
+  const { nameRoute, totalTime, stations } = req.body;
 
   if (!nameRoute || nameRoute.trim() === "") {
     return res.status(400).json({ error: "Route name is required" });
@@ -1053,27 +1053,53 @@ app.put("/carroutes/:id", async (req, res) => {
   try {
     connection = await oracledb.getConnection(dbConfig);
 
+    // อัพเดต ROUTE
     const result = await connection.execute(
-      `UPDATE ROUTE SET NAME_ROUTE = :NAME_ROUTE, TOTALSUM_TIME = :TOTALSUM_TIME WHERE ID = :id`,
+      `UPDATE ROUTE 
+       SET NAME_ROUTE = :NAME_ROUTE, TOTALSUM_TIME = :TOTALSUM_TIME 
+       WHERE ID = :id`,
       {
         NAME_ROUTE: nameRoute.trim(),
         TOTALSUM_TIME: totalTime || 0,
         id,
-      },
-      { autoCommit: true }
+      }
     );
-
 
     if (result.rowsAffected === 0) {
       return res.status(404).json({ error: "Route not found" });
     }
 
-    res.json({ message: "Route updated successfully!" });
+    // ถ้ามี stations ใน body -> อัพเดตตารางลูก
+    if (stations && Array.isArray(stations)) {
+      // 1. ลบข้อมูลเก่า
+      await connection.execute(
+        `DELETE FROM ROUTE_STATIONS WHERE ID_ROUTE = :id`,
+        { id }
+      );
+
+      // 2. แทรกข้อมูลใหม่
+      if (stations.length > 0) {
+        const binds = stations.map((s) => ({
+          routeId: id,
+          stopsId: s.stops_id,
+          stationTime: s.station_time,
+          seqNo: s.seq_no,
+        }));
+
+        await connection.executeMany(
+          `INSERT INTO ROUTE_STATIONS (ID, ID_ROUTE, STOPS_ID, STATION_TIME, SEQ_NO)
+           VALUES (route_stations_seq.NEXTVAL, :routeId, :stopsId, :stationTime, :seqNo)`,
+          binds
+        );
+      }
+    }
+
+    await connection.commit();
+
+    res.json({ message: "Route and stations updated successfully!" });
   } catch (err) {
     console.error("❌ PUT /carroutes/:id error:", err);
-    res
-      .status(500)
-      .json({ error: "Database update failed", details: err.message });
+    res.status(500).json({ error: "Database update failed", details: err.message });
   } finally {
     if (connection) {
       try {
@@ -1084,6 +1110,7 @@ app.put("/carroutes/:id", async (req, res) => {
     }
   }
 });
+
 
 // ลบเส้นทางรถ
 app.delete("/carroutes/:id", async (req, res) => {
@@ -1289,3 +1316,65 @@ app.use((req, res) => {
     .json({ error: `Endpoint ${req.method} ${req.url} not found` });
 });
 
+//=================================ส่วนของ API รายงาน1======================================
+app.get("/report1", async (req, res) => {
+  let connection;
+  const { year, month } = req.query;
+
+  try {
+    connection = await oracledb.getConnection(dbConfig);
+
+    let sql = `
+      SELECT 
+        TO_CHAR(RESERVE_DATE, 'MM') AS MONTH_NUM,
+        STARTT AS STATION,
+        COUNT(CASE WHEN STARTT IS NOT NULL THEN 1 END) AS TOTAL_UP,
+        COUNT(CASE WHEN STOPP IS NOT NULL THEN 1 END) AS TOTAL_DOWN
+      FROM RESERVE
+      WHERE 1=1
+    `;
+
+    const binds = {};
+
+    // ✅ Filter by year
+    if (year) {
+      const gregorianYear = parseInt(year) - 543; // แปลง พ.ศ. → ค.ศ.
+      sql += ` AND EXTRACT(YEAR FROM RESERVE_DATE) = :y `;
+      binds.y = gregorianYear;
+    }
+
+    // ✅ Filter by month
+    if (month) {
+      sql += ` AND EXTRACT(MONTH FROM RESERVE_DATE) = :m `;
+      binds.m = parseInt(month);
+    }
+
+    sql += `
+      GROUP BY TO_CHAR(RESERVE_DATE, 'MM'), STARTT
+      ORDER BY TO_CHAR(RESERVE_DATE, 'MM')
+    `;
+
+    const result = await connection.execute(sql, binds);
+
+    // ✅ แปลงผลลัพธ์ให้อ่านง่าย
+    const rows = result.rows.map(r => ({
+      MONTH: r[0],
+      STATION: r[1],
+      UP: r[2],
+      DOWN: r[3]
+    }));
+
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  } finally {
+    if (connection) {
+      try {
+        await connection.close();
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  }
+});
