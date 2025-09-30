@@ -1,63 +1,68 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import axios from "axios";
+//import { useNavigate } from "react-router-dom";
 import Sidebar from "../Sidebar";
 import { FaSearch } from "react-icons/fa";
 import "./Customer.css";
 
 function RentInfo() {
-  const navigate = useNavigate();
+  //const navigate = useNavigate();
   const [bookings, setBookings] = useState([]);
+  const [fromStation, setFromStation] = useState(""); // ต้นทาง
+  const [toStation, setToStation] = useState(""); // ปลายทาง
+  const [carType, setCarType] = useState(""); // ประเภทรถ
+  const [seats, setSeats] = useState(""); // จำนวนที่นั่ง
+  const [filteredBookings, setFilteredBookings] = useState([]); //filterแล้ว
 
   useEffect(() => {
-    // mock data — คุณสามารถเปลี่ยนเป็น API จริงของคุณได้
-    const mockData = [
-      {
-        id: 1,
-        origin: "โลตัสหนองจอก",
-        destination: "ร้านส้มตำเป๋าปาง",
-        vehicle: "รถบัส",
-        driver: "สมชาย",
-        startDate: "07/09/2568",
-        startTime: "9:35",
-        arrivalDate: "07/09/2568",
-        arrivalTime: "9:43",
-        seats: 3,
-        status: "กำลังจอง",
-      },
-      {
-        id: 2,
-        origin: "โลตัสหนองจอก",
-        destination: "รพ.หนองจอก",
-        vehicle: "รถตู้",
-        driver: "สมโชค",
-        startDate: "06/09/2568",
-        startTime: "9:40",
-        arrivalDate: "06/09/2568",
-        arrivalTime: "9:50",
-        seats: 1,
-        status: "ไม่มา",
-      },
-      {
-        id: 3,
-        origin: "Big C หนองจอก",
-        destination: "ร้านส้มตำเป๋าปาง",
-        vehicle: "รถบัส",
-        driver: "สมชัย",
-        startDate: "05/09/2568",
-        startTime: "9:30",
-        arrivalDate: "05/09/2568",
-        arrivalTime: "9:35",
-        seats: 1,
-        status: "จองแล้ว",
-      },
-    ];
-    setBookings(mockData);
+    const fetchBookings = async () => {
+      try {
+        const user = JSON.parse(localStorage.getItem("user"));
+        const cus_id = user.id;
+
+        const res = await fetch(`http://localhost:3000/reserve/${cus_id}`);
+        const responseData = await res.json();
+
+        const data = responseData.map((item) => ({
+          id: item.ID,
+          origin: item.PICKUP_NAME,
+          destination: item.DROPOFF_NAME,
+          vehicle: item.CAR_TYPE,
+          driver: item.DRIVER_NAME,
+          startDate: item.DATE_TRIP,
+          startTime: item.PICKUP_TIME,
+          arrivalDate: item.DATE_TRIP,
+          arrivalTime: item.DROPOFF_TIME,
+          seats: item.SEAT || 1,
+          status: item.STATUS || "-",
+        }));
+
+        setBookings(data);
+        setFilteredBookings(data);
+      } catch (err) {
+        console.error("❌ Fetch bookings error:", err);
+      }
+    };
+
+    fetchBookings();
   }, []);
 
-  const handleCancel = (id) => {
+  const handleCancel = async (id) => {
     if (window.confirm("คุณต้องการยกเลิกการจองนี้หรือไม่?")) {
-      setBookings((prev) => prev.filter((b) => b.id !== id));
+      try {
+        await fetch(`http://localhost:3000/reserve/cancel/${id}`, {
+          method: "POST",
+        });
+
+        setBookings((prev) =>
+          prev.map((b) => (b.id === id ? { ...b, status: "ยกเลิก" } : b))
+        );
+        setFilteredBookings((prev) =>
+          prev.map((b) => (b.id === id ? { ...b, status: "ยกเลิก" } : b))
+        );
+      } catch (err) {
+        console.error("❌ Cancel booking error:", err);
+        alert("ไม่สามารถยกเลิกได้ กรุณาลองใหม่");
+      }
     }
   };
 
@@ -66,6 +71,22 @@ function RentInfo() {
       `ตั๋วของคุณ\n\nจาก ${booking.origin} ไป ${booking.destination}\nรถ: ${booking.vehicle}\nเวลาออก: ${booking.startDate} ${booking.startTime}\nถึง: ${booking.arrivalDate} ${booking.arrivalTime}\nที่นั่ง: ${booking.seats}`
     );
   };
+
+  const handleSearch = () => {
+    const filtered = bookings.filter(
+      (b) =>
+        (fromStation === "" || b.origin === fromStation) &&
+        (toStation === "" || b.destination === toStation) &&
+        (carType === "" || b.vehicle === carType) &&
+        (seats === "" || b.seats >= Number(seats))
+    );
+    setFilteredBookings(filtered);
+  };
+
+  const stations = Array.from(
+    new Set(bookings.flatMap((b) => [b.origin, b.destination]))
+  );
+  const carTypes = Array.from(new Set(bookings.map((b) => b.vehicle)));
 
   return (
     <div className="rentinfo-container">
@@ -76,21 +97,46 @@ function RentInfo() {
         <div className="search-bar">
           <label>
             ต้นทาง :
-            <select>
-              <option>ทุกเส้นทาง</option>
+            <select
+              value={fromStation}
+              onChange={(e) => setFromStation(e.target.value)}
+            >
+              <option value="">ทุกเส้นทาง</option>
+              {stations.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
             </select>
           </label>
+
           <label>
             ปลายทาง :
-            <select>
-              <option>ทุกเส้นทาง</option>
+            <select
+              value={toStation}
+              onChange={(e) => setToStation(e.target.value)}
+            >
+              <option value="">ทุกเส้นทาง</option>
+              {stations.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
             </select>
           </label>
 
           <label>
             ประเภทรถ :
-            <select>
-              <option>ทุกประเภท</option>
+            <select
+              value={carType}
+              onChange={(e) => setCarType(e.target.value)}
+            >
+              <option value="">ทุกประเภท</option>
+              {carTypes.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
             </select>
           </label>
 
@@ -101,9 +147,16 @@ function RentInfo() {
 
           <label>
             ที่นั่ง :
-            <input type="number" min="1" defaultValue={1} />
+            <input
+              type="number"
+              min="1"
+              value={seats}
+              onChange={(e) => setSeats(e.target.value)}
+              placeholder="จำนวนที่นั่ง"
+            />
           </label>
-          <button className="search-btn">
+
+          <button className="search-btn" onClick={handleSearch}>
             <FaSearch />
           </button>
         </div>
@@ -125,34 +178,40 @@ function RentInfo() {
               </tr>
             </thead>
             <tbody>
-              {bookings.map((b) => (
+              {filteredBookings.map((b) => (
                 <tr key={b.id}>
                   <td>{b.origin}</td>
                   <td>{b.destination}</td>
                   <td>{b.vehicle}</td>
                   <td>{b.driver}</td>
                   <td>
-                    {b.startDate} {b.startTime}
+                    {b.startDate}&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+                    {Number(b.startTime).toFixed(2).padStart(5, "0")} น.
                   </td>
                   <td>
-                    {b.arrivalDate} {b.arrivalTime}
+                    {b.arrivalDate}&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+                    {Number(b.arrivalTime).toFixed(2).padStart(5, "0")} น.
                   </td>
                   <td>{b.seats}</td>
                   <td>{b.status}</td>
                   <td>
                     <div className="action-buttons">
-                      <button
-                        className="ticket-btn"
-                        onClick={() => handleTicket(b)}
-                      >
-                        ตั๋ว
-                      </button>
-                      <button
-                        className="cancel-btn"
-                        onClick={() => handleCancel(b.id)}
-                      >
-                        ยกเลิก
-                      </button>
+                      {b.status !== "ยกเลิก" && (
+                        <>
+                          <button
+                            className="ticket-btn"
+                            onClick={() => handleTicket(b)}
+                          >
+                            ตั๋ว
+                          </button>
+                          <button
+                            className="cancel-btn"
+                            onClick={() => handleCancel(b.id)}
+                          >
+                            ยกเลิก
+                          </button>
+                        </>
+                      )}
                     </div>
                   </td>
                 </tr>

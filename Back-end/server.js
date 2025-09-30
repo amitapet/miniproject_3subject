@@ -145,6 +145,80 @@ app.post("/login", async (req, res) => {
 });
 //สิ้นสุดส่วนของ API login
 
+// GET RESERVE
+app.get("/reserve/:cus_id", async (req, res) => {
+  let connection;
+  try {
+    const cusId = req.params.cus_id; // ดึงค่าจาก URL เช่น /reserve/C0001
+
+    connection = await oracledb.getConnection(dbConfig);
+
+    const result = await connection.execute(
+      `SELECT 
+          r.ID,
+          r.STARTT,
+          r.STOPT,
+          r.STATUS,
+          r.SEAT,
+          r.CUS_ID,
+          r.ROUTE_ID,
+          r.TRIP_ID,
+          e.FNAME AS DRIVER_NAME,    
+          tc.NAME AS CAR_TYPE,          
+          ss.NAME AS PICKUP_NAME,       
+          sstops.NAME AS DROPOFF_NAME,  
+          sd.TIME_IN AS PICKUP_TIME,    
+          stopd.TIME_IN AS DROPOFF_TIME,
+          TO_CHAR(t.DATE_TRIP, 'DD-MON-YY') AS DATE_TRIP  
+       FROM RESERVE r
+       JOIN TRIP t ON r.TRIP_ID = t.ID
+       JOIN EMPLOYEE e ON t.ID_EMPLOYEE = e.ID
+       JOIN CAR c ON t.ID_CAR = c.ID
+       JOIN TYPE_CAR tc ON c.ID_TYPECAR = tc.ID
+       LEFT JOIN STOP_DURATION sd ON r.STARTT = sd.ID
+       LEFT JOIN ROUTE_STATIONS rs_pick ON sd.ID_STOPS = rs_pick.ID
+       LEFT JOIN STATION ss ON rs_pick.STOPS_ID = ss.ID
+       LEFT JOIN STOP_DURATION stopd ON r.STOPT = stopd.ID
+       LEFT JOIN ROUTE_STATIONS rs_drop ON stopd.ID_STOPS = rs_drop.ID
+       LEFT JOIN STATION sstops ON rs_drop.STOPS_ID = sstops.ID
+       WHERE r.CUS_ID = :cusId      -- เงื่อนไขค้นหาตาม cus_id
+       ORDER BY r.ID`,
+      { cusId }, // bind parameter
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error("❌ GET /reserve error:", err);
+    res.status(500).json({ error: "DB Error", details: err.message });
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+//END RESERVE
+
+//CANCEL RESERVE
+app.post("/reserve/cancel/:id", async (req, res) => {
+  let connection;
+  try {
+    const reserveId = req.params.id;
+    connection = await oracledb.getConnection(dbConfig);
+    const result = await connection.execute(
+      `UPDATE RESERVE
+       SET STATUS = 'cancel'
+       WHERE ID = :reserveId`,
+      { reserveId },
+      { autoCommit: true }
+    );
+    res.json({ success: true, message: "ยกเลิกการจองเรียบร้อยแล้ว" });
+  } catch (err) {
+    console.error("❌ POST /reserve/cancel error:", err);
+    res.status(500).json({ error: "DB Error", details: err.message });
+  } finally {
+    if (connection) await connection.close();
+  }
+}); //CANCEL RESERVE
+
 // GET assignments
 app.get("/assignment", async (req, res) => {
   let connection;
