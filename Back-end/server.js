@@ -1492,33 +1492,43 @@ app.delete("/TRIP/:id", async (req, res) => {
 });
 
 
+//=================================ส่วนของ API แสดงตารางสถานี======================================
+// GET route_stations by route ID
 
+app.get("/trip/route_stations/:id", async (req, res) => {
+  let connection;
+  try {
+    const routeId = req.params.id;
+    connection = await oracledb.getConnection(dbConfig); // ✅ เพิ่มบรรทัดนี้
 
+    const result = await connection.execute(
+      `SELECT 
+          rs.ID AS ROUTE_STATIONS_ID,
+          rs.SEQ_NO,
+          s.NAME AS STATION_NAME,
+          rs.STATION_TIME
+       FROM ROUTE_STATIONS rs
+       JOIN STATION s ON rs.STOPS_ID = s.ID
+       WHERE rs.ID_ROUTE = :routeId
+       ORDER BY rs.SEQ_NO`,
+      [routeId],
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
 
-
-
-
-
-// Error handler
-app.use((err, req, res, next) => {
-  console.error("🔥 Unhandled error:", err);
-  res
-    .status(500)
-    .json({ error: "Internal server error", details: err.message });
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Error fetching route stations" });
+  } finally {
+    if (connection) {
+      try {
+        await connection.close();
+      } catch (err) {
+        console.error("Connection close error:", err);
+      }
+    }
+  }
 });
-
-// 404 handler
-app.use((req, res) => {
-  console.log(`❌ 404: ${req.method} ${req.url} not found`);
-  res
-    .status(404)
-    .json({ error: `Endpoint ${req.method} ${req.url} not found` });
-});
-
-
-
-
-
 
 
 
@@ -1584,3 +1594,23 @@ app.get("/report1", async (req, res) => {
     }
   }
 });
+
+
+
+
+// Error handler
+app.use((err, req, res, next) => {
+  console.error("🔥 Unhandled error:", err);
+  res
+    .status(500)
+    .json({ error: "Internal server error", details: err.message });
+});
+
+// 404 handler
+app.use((req, res) => {
+  console.log(`❌ 404: ${req.method} ${req.url} not found`);
+  res
+    .status(404)
+    .json({ error: `Endpoint ${req.method} ${req.url} not found` });
+});
+

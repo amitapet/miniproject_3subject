@@ -133,13 +133,15 @@ function Employees() {
 
         <div className="search-wrapper">
           <FaSearch className="search-icon" />
+          
           <input
             type="text"
-            placeholder="ค้นหา ชื่อ, นามสกุล, Email, username"
+            placeholder="ค้นหา เส้นทาง, รถ, คนขับ"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="employee-search"
           />
+
         </div>
         <div className="scroll">
         <table className="employee-table">

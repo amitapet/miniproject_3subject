@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import Sidebar from "../Sidebar";
 import axios from "axios";
+import { FaSearch } from "react-icons/fa";
 import "./Schedules.css";
 
 function Schedules() {
+
   const [trips, setTrips] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editingTrip, setEditingTrip] = useState(null);
@@ -17,6 +19,8 @@ function Schedules() {
   const [cars, setCars] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [routes, setRoutes] = useState([]);
+  const [routeStations, setRouteStations] = useState([]);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     fetchTrips();
@@ -99,6 +103,33 @@ function Schedules() {
     }
   };
 
+
+  //กรองค้นหา
+  const filteredTrips = trips.filter(trip => {
+    const searchText = search.toLowerCase();
+    return (
+      trip.ROUTE?.NAME?.toLowerCase().includes(searchText) ||
+      trip.CAR?.ID?.toLowerCase().includes(searchText) ||
+      trip.CAR?.TYPE?.NAME?.toLowerCase().includes(searchText) ||
+      trip.EMPLOYEE?.NAME?.toLowerCase().includes(searchText)
+    );
+  });
+
+
+//===================ส่วนดึงสถานีเมื่อเลือก route===============
+ useEffect(() => {
+  if (form.ID_ROUTE) {
+    axios.get(`http://localhost:3000/trip/route_stations/${form.ID_ROUTE}`)
+      .then(res => setRouteStations(res.data))
+      .catch(err => console.error(err));
+  } else {
+    setRouteStations([]);
+  }
+  }, [form.ID_ROUTE]);
+//====================================
+
+
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     // prepare payload types
@@ -136,6 +167,17 @@ function Schedules() {
           <h2>รอบเวลาเดินรถ</h2>
           <button className="butn-add" onClick={openAddModal}>เพิ่มรอบเวลา</button>
 
+          <div className="search-wrapper">
+            <FaSearch className="search-icon" />
+            <input
+              type="text"
+              placeholder="ค้นหา เส้นทาง, รถ, คนขับ"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="employee-search"
+            />
+          </div>
+
           <div className="scroll">
             <table className="employee-table">
               <thead>
@@ -149,29 +191,31 @@ function Schedules() {
                   <th></th>
                 </tr>
               </thead>
-              <tbody>
-                {trips.map(trip => (
-                  <tr key={trip.TRIP_ID}>
-                    <td>{trip.ROUTE?.NAME || "-"}</td>
-                    <td>{trip.CAR ? `${trip.CAR.ID} - ${trip.CAR.TYPE?.NAME || ""}` : "-"}</td>
-                    <td>{trip.EMPLOYEE?.NAME || "-"}</td>
-                    <td>{trip.TIMEOUT}</td>
-                    <td>{trip.ROUTE?.TOTALSUM_TIME || "-"}</td>
-                    <td>{trip.DATE_TRIP || "-"}</td>
-                    <td>
-                      <button className="btn-edit" onClick={() => openEditModal(trip)}>แก้ไข</button>
-                      <button className="btn-delete" onClick={() => handleDelete(trip.TRIP_ID)}>ลบ</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
+              
+                  <tbody>
+                    {filteredTrips.map(trip => (
+                      <tr key={trip.TRIP_ID}>
+                        <td>{trip.ROUTE?.NAME || "-"}</td>
+                        <td>{trip.CAR ? `${trip.CAR.ID} - ${trip.CAR.TYPE?.NAME || ""}` : "-"}</td>
+                        <td>{trip.EMPLOYEE?.NAME || "-"}</td>
+                        <td>{trip.TIMEOUT?.toFixed(2) || "-"}</td>
+                        <td>{trip.ROUTE?.TOTALSUM_TIME || "-"}</td>
+                        <td>{trip.DATE_TRIP || "-"}</td>
+                        <td>
+                          <button className="btn-edit" onClick={() => openEditModal(trip)}>แก้ไข / รายละเอียด</button>
+                          <button className="btn-delete" onClick={() => handleDelete(trip.TRIP_ID)}>ลบ</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+
             </table>
           </div>
 
           {showModal && (
             <div className="modal-overlay">
               <div className="modal-box">
-                <h3>{editingTrip ? "แก้ไขรอบเวลา" : "เพิ่มรอบเวลา"}</h3>
+                <h3>{editingTrip ? "แก้ไขรอบเวลา/รายละเอียด" : "เพิ่มรอบเวลา"}</h3>
                 <form onSubmit={handleSubmit}>
                   <label>วันที่</label>
                   <input type="date" value={form.DATE_TRIP} onChange={e => setForm({ ...form, DATE_TRIP: e.target.value })} required />
@@ -186,20 +230,32 @@ function Schedules() {
                   </select>
 
                   <label>คนขับ</label>
+                    
                     <select
                       value={form.ID_EMPLOYEE}
                       onChange={e => setForm({ ...form, ID_EMPLOYEE: e.target.value })}
                       required
                     >
                       <option value="">เลือก</option>
-                      {employees
-                          .filter(emp => emp.POSITION?.NAME === "Driver")
-                          .map(emp => (
-                            <option key={emp.ID} value={emp.ID}>
-                              {emp.FNAME} {emp.LNAME}
-                            </option>
-                          ))}
+                      
+                          {employees
+                            .filter(emp =>
+                              emp.POSITION?.NAME === "Driver" &&
+                              (
+                                !trips.some(trip =>
+                                  trip.EMPLOYEE?.ID === emp.ID &&
+                                  trip.TRIP_ID !== editingTrip?.TRIP_ID // ✅ ยกเว้นคนขับที่อยู่ใน trip ที่กำลังแก้ไข
+                                )
+                              )
+                            )
+                            .map(emp => (
+                              <option key={emp.ID} value={emp.ID}>
+                                {emp.FNAME} {emp.LNAME}
+                              </option>
+                            ))}
+
                     </select>
+
 
                   <label>เส้นทาง</label>
                   <select value={form.ID_ROUTE} onChange={e => setForm({ ...form, ID_ROUTE: e.target.value })} required>
@@ -209,35 +265,35 @@ function Schedules() {
                   
                   
                       {/* ตารางสถานีของเส้นทางที่เลือก */}
-                      {form.ID_ROUTE && (() => {
-                        const selectedRoute = routes.find(r => r.ID === form.ID_ROUTE);
-                        return (
-                          <div className="route-stations">
-                            <h4>จุดจอดในเส้นทาง</h4>
-                            <table className="stations-table">
-                              <thead>
-                                <tr>
-                                  <th>ลำดับ</th>
-                                  <th>สถานี</th>
-                                  <th>เวลาเดินทาง (นาที)</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {selectedRoute?.STATIONS?.map(st => (
-                                  <tr key={st.ROUTE_STATIONS_ID}>
-                                    <td>{st.SEQ_NO}</td>
-                                    <td>{st.STATION_NAME}</td>
-                                    <td>{st.STATION_TIME}</td>
-                                  </tr>
-                                )) || (
-                                  <tr><td colSpan="3">ไม่มีข้อมูลสถานี</td></tr>
-                                )}
-                              </tbody>
-                            </table>
-                          </div>
-                        );
-                      })()}
+                      {routeStations.length > 0 && (
 
+                    <div className="route-stations">
+                      <h4>จุดจอดในเส้นทาง</h4>
+                      <div className="scroll">
+                      <table className="stations-table">
+                        <thead>
+                          <tr>
+                            <th>ลำดับ</th>
+                            <th>สถานี</th>
+                            <th>เวลาเดินทาง (นาที)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {routeStations.map(st => (
+                            <tr key={st.ROUTE_STATIONS_ID}>
+                              <td>{st.SEQ_NO}</td>
+                              <td>{st.STATION_NAME}</td>
+                              <td>{st.STATION_TIME}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      </div>
+                    </div>
+
+                  )}
+
+                  <hr></hr>
 
                   <div className="modal-actions">
                     <button type="submit" className="btn-submit">บันทึก</button>
