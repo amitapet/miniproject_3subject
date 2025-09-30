@@ -116,17 +116,17 @@ function Schedules() {
   });
 
 
-//===================ส่วนดึงสถานีเมื่อเลือก route===============
- useEffect(() => {
-  if (form.ID_ROUTE) {
-    axios.get(`http://localhost:3000/trip/route_stations/${form.ID_ROUTE}`)
-      .then(res => setRouteStations(res.data))
-      .catch(err => console.error(err));
-  } else {
-    setRouteStations([]);
-  }
+  //===================ส่วนดึงสถานีเมื่อเลือก route===============
+  useEffect(() => {
+    if (form.ID_ROUTE) {
+      axios.get(`http://localhost:3000/trip/route_stations/${form.ID_ROUTE}`)
+        .then(res => setRouteStations(res.data))
+        .catch(err => console.error(err));
+    } else {
+      setRouteStations([]);
+    }
   }, [form.ID_ROUTE]);
-//====================================
+  //====================================
 
 
 
@@ -186,28 +186,28 @@ function Schedules() {
                   <th>รถ</th>
                   <th>คนขับ</th>
                   <th>เวลาออก (นาฬิกา)</th>
-                  <th>เวลาเดินทาง (นาที)</th> 
+                  <th>เวลาเดินทาง (นาที)</th>
                   <th>วันที่</th>
                   <th></th>
                 </tr>
               </thead>
-              
-                  <tbody>
-                    {filteredTrips.map(trip => (
-                      <tr key={trip.TRIP_ID}>
-                        <td>{trip.ROUTE?.NAME || "-"}</td>
-                        <td>{trip.CAR ? `${trip.CAR.ID} - ${trip.CAR.TYPE?.NAME || ""}` : "-"}</td>
-                        <td>{trip.EMPLOYEE?.NAME || "-"}</td>
-                        <td>{trip.TIMEOUT?.toFixed(2) || "-"}</td>
-                        <td>{trip.ROUTE?.TOTALSUM_TIME || "-"}</td>
-                        <td>{trip.DATE_TRIP || "-"}</td>
-                        <td>
-                          <button className="btn-edit" onClick={() => openEditModal(trip)}>แก้ไข / รายละเอียด</button>
-                          <button className="btn-delete" onClick={() => handleDelete(trip.TRIP_ID)}>ลบ</button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
+
+              <tbody>
+                {filteredTrips.map(trip => (
+                  <tr key={trip.TRIP_ID}>
+                    <td>{trip.ROUTE?.NAME || "-"}</td>
+                    <td>{trip.CAR ? `${trip.CAR.ID} - ${trip.CAR.TYPE?.NAME || ""}` : "-"}</td>
+                    <td>{trip.EMPLOYEE?.NAME || "-"}</td>
+                    <td>{trip.TIMEOUT?.toFixed(2) || "-"}</td>
+                    <td>{trip.ROUTE?.TOTALSUM_TIME || "-"}</td>
+                    <td>{trip.DATE_TRIP || "-"}</td>
+                    <td>
+                      <button className="btn-edit" onClick={() => openEditModal(trip)}>แก้ไข / รายละเอียด</button>
+                      <button className="btn-delete" onClick={() => handleDelete(trip.TRIP_ID)}>ลบ</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
 
             </table>
           </div>
@@ -229,37 +229,37 @@ function Schedules() {
                     {cars.map(c => <option key={c.ID} value={c.ID}>{c.ID} {c.TYPE_NAME ? ` - ${c.TYPE_NAME}` : (c.TYPE?.NAME ? ` - ${c.TYPE.NAME}` : '')}</option>)}
                   </select>
 
-                  
-                      <label>คนขับ</label>
-                      {!form.DATE_TRIP ? (
-                        <select disabled>
-                          <option>กรุณาเลือกวันที่ก่อน</option>
-                        </select>
-                      ) : (
-                        <select
-                          value={form.ID_EMPLOYEE}
-                          onChange={(e) => setForm({ ...form, ID_EMPLOYEE: e.target.value })}
-                          required
-                        >
-                          <option value="">เลือก</option>
-                          {employees
-                            .filter(emp =>
-                              emp.POSITION?.NAME === "Driver" &&
-                              (
-                                !trips.some(trip =>
-                                  trip.EMPLOYEE?.ID === emp.ID &&
-                                  trip.DATE_TRIP === form.DATE_TRIP &&
-                                  trip.TRIP_ID !== editingTrip?.TRIP_ID
-                                )
-                              )
+
+                  <label>คนขับ</label>
+                  {!form.DATE_TRIP ? (
+                    <select disabled>
+                      <option>กรุณาเลือกวันที่ก่อน</option>
+                    </select>
+                  ) : (
+                    <select
+                      value={form.ID_EMPLOYEE}
+                      onChange={(e) => setForm({ ...form, ID_EMPLOYEE: e.target.value })}
+                      required
+                    >
+                      <option value="">เลือก</option>
+                      {employees
+                        .filter(emp =>
+                          emp.POSITION?.NAME === "Driver" &&
+                          (
+                            !trips.some(trip =>
+                              trip.EMPLOYEE?.ID === emp.ID &&
+                              trip.DATE_TRIP === form.DATE_TRIP &&
+                              trip.TRIP_ID !== editingTrip?.TRIP_ID
                             )
-                            .map(emp => (
-                              <option key={emp.ID} value={emp.ID}>
-                                {emp.FNAME} {emp.LNAME}
-                              </option>
-                            ))}
-                        </select>
-                      )}
+                          )
+                        )
+                        .map(emp => (
+                          <option key={emp.ID} value={emp.ID}>
+                            {emp.FNAME} {emp.LNAME}
+                          </option>
+                        ))}
+                    </select>
+                  )}
 
 
 
@@ -268,32 +268,32 @@ function Schedules() {
                     <option value="">เลือก</option>
                     {routes.map(r => <option key={r.ID} value={r.ID}>{r.NAME_ROUTE}</option>)}
                   </select>
-                  
-                  
-                      {/* ตารางสถานีของเส้นทางที่เลือก */}
-                      {routeStations.length > 0 && (
+
+
+                  {/* ตารางสถานีของเส้นทางที่เลือก */}
+                  {routeStations.length > 0 && (
 
                     <div className="route-stations">
                       <h4>จุดจอดในเส้นทาง</h4>
                       <div className="scroll">
-                      <table className="stations-table">
-                        <thead>
-                          <tr>
-                            <th>ลำดับ</th>
-                            <th>สถานี</th>
-                            <th>เวลาเดินทาง (นาที)</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {routeStations.map(st => (
-                            <tr key={st.ROUTE_STATIONS_ID}>
-                              <td>{st.SEQ_NO}</td>
-                              <td>{st.STATION_NAME}</td>
-                              <td>{st.STATION_TIME}</td>
+                        <table className="stations-table">
+                          <thead>
+                            <tr>
+                              <th>ลำดับ</th>
+                              <th>สถานี</th>
+                              <th>เวลาเดินทาง (นาที)</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody>
+                            {routeStations.map(st => (
+                              <tr key={st.ROUTE_STATIONS_ID}>
+                                <td>{st.SEQ_NO}</td>
+                                <td>{st.STATION_NAME}</td>
+                                <td>{st.STATION_TIME}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
                     </div>
 

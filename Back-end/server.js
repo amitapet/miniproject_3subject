@@ -817,7 +817,7 @@ app.delete("/Employee/:id", async (req, res) => {
 app.get("/stations", async (req, res) => {
   let connection;
   try {
-    console.log("📝 Fetching stations...");
+    console.log("Fetching stations...");
     connection = await oracledb.getConnection(dbConfig);
     const result = await connection.execute(
       `SELECT ID, NAME FROM STATION ORDER BY ID`,
@@ -825,11 +825,11 @@ app.get("/stations", async (req, res) => {
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
 
-    console.log(`✅ Found ${result.rows.length} stations`);
+    console.log(`Found ${result.rows.length} stations`);
     console.log("Stations:", result.rows);
     res.json(result.rows);
   } catch (err) {
-    console.error("❌ GET /stations error:", err);
+    console.error("GET /stations error:", err);
     res.status(500).json({
       error: "Database query failed",
       details: err.message,
@@ -845,11 +845,11 @@ app.get("/stations", async (req, res) => {
   }
 });
 
-// GET all routes
+// ดึงข้อมูลเส้นทางรถ
 app.get("/carroutes", async (req, res) => {
   let connection;
   try {
-    console.log("📝 Fetching routes...");
+    console.log("Fetching routes...");
     connection = await oracledb.getConnection(dbConfig);
 
     const result = await connection.execute(
@@ -858,10 +858,10 @@ app.get("/carroutes", async (req, res) => {
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
 
-    console.log(`✅ Found ${result.rows.length} routes`);
+    console.log(`Found ${result.rows.length} routes`);
     res.json(result.rows);
   } catch (err) {
-    console.error("❌ GET /carroutes error:", err);
+    console.error("GET /carroutes error:", err);
     res.status(500).json({
       error: "Database query failed",
       details: err.message,
@@ -880,31 +880,31 @@ app.get("/carroutes", async (req, res) => {
 
 // เพิ่มเส้นทางรถ
 app.post("/carroutes", async (req, res) => {
-  console.log("📝 POST /carroutes request received");
+  console.log("POST /carroutes request received");
   console.log("Request body:", JSON.stringify(req.body, null, 2));
 
   const { id, nameRoute, stations, totalTime } = req.body;
 
   // ตรวจสอบข้อมูล
   if (!nameRoute || nameRoute.trim() === "") {
-    console.log("❌ Validation failed: nameRoute is required");
+    console.log("Validation failed: nameRoute is required");
     return res.status(400).json({ error: "Route name is required" });
   }
 
   if (!stations || !Array.isArray(stations) || stations.length === 0) {
-    console.log("❌ Validation failed: stations are required");
+    console.log("Validation failed: stations are required");
     return res.status(400).json({ error: "At least one station is required" });
   }
 
   let connection;
   try {
-    console.log("🔌 Connecting to database...");
+    console.log("Connecting to database...");
     connection = await oracledb.getConnection(dbConfig);
-    console.log("✅ Database connected");
+    console.log("Database connected");
     let routeId = id && id.trim() ? id.trim() : null;
 
     // Insert Route
-    console.log("💾 Inserting route...");
+    console.log("Inserting route...");
     const insertResult = await connection.execute(
       `INSERT INTO ROUTE (ID, NAME_ROUTE, TOTALSUM_TIME) 
       VALUES (:ID, :NAME_ROUTE, :TOTALSUM_TIME)`,
@@ -914,9 +914,8 @@ app.post("/carroutes", async (req, res) => {
         TOTALSUM_TIME: totalTime || 0,
       }
     );
-
     console.log(
-      `✅ Route inserted successfully. Rows affected: ${insertResult.rowsAffected}`
+      `Route inserted successfully. Rows affected: ${insertResult.rowsAffected}`
     );
 
     // แทรก stations
@@ -935,7 +934,7 @@ app.post("/carroutes", async (req, res) => {
     );
 
     console.log(
-      `✅ Stations inserted successfully. Rows affected: ${stationResult.rowsAffected}`
+      `Stations inserted successfully. Rows affected: ${stationResult.rowsAffected}`
     );
 
     // Commit ทั้งหมด
@@ -948,7 +947,7 @@ app.post("/carroutes", async (req, res) => {
       totalTime: totalTime || 0,
     });
   } catch (err) {
-    console.error("❌ POST /carroutes error:", err);
+    console.error("POST /carroutes error:", err);
 
     // ตรวจสอบ ID ซ้ำ
     if (err.message && err.message.includes("ORA-00001")) {
@@ -966,7 +965,7 @@ app.post("/carroutes", async (req, res) => {
     if (connection) {
       try {
         await connection.close();
-        console.log("🔌 Database connection closed");
+        console.log("Database connection closed");
       } catch (closeErr) {
         console.error("Connection close error:", closeErr);
       }
@@ -979,7 +978,7 @@ app.get("/carroutes/:id", async (req, res) => {
   let connection;
   try {
     const { id } = req.params;
-    console.log("📝 Fetching routes for ID:", id);
+    console.log("Fetching routes for ID:", id);
     connection = await oracledb.getConnection(dbConfig);
     const result = await connection.execute(
       `SELECT ID, STOPS_ID, ID_ROUTE, STATION_TIME , SEQ_NO
@@ -990,10 +989,10 @@ app.get("/carroutes/:id", async (req, res) => {
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
 
-    console.log(`✅ Found ${result.rows.length} ROUTE_STATIONS`);
+    console.log(`Found ${result.rows.length} ROUTE_STATIONS`);
     res.json(result.rows);
   } catch (err) {
-    console.error("❌ GET /carroutes/:id error:", err);
+    console.error("GET /carroutes/:id error:", err);
     res.status(500).json({
       error: "Database query failed",
       details: err.message,
@@ -1014,7 +1013,7 @@ app.get("/route_stations/:id", async (req, res) => {
   let connection;
   try {
     const { id } = req.params;
-    console.log("📝 Fetching routes for ID:", id);
+    console.log("Fetching routes for ID:", id);
     connection = await oracledb.getConnection(dbConfig);
     const result = await connection.execute(
       `SELECT ID, ID_ROUTE , STOPS_ID, STATION_TIME , SEQ_NO
@@ -1025,10 +1024,10 @@ app.get("/route_stations/:id", async (req, res) => {
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
 
-    console.log(`✅ Found ${result.rows.length} ROUTE_STATIONS`);
+    console.log(`Found ${result.rows.length} ROUTE_STATIONS`);
     res.json(result.rows);
   } catch (err) {
-    console.error("❌ GET /route_stations error:", err);
+    console.error("GET /route_stations error:", err);
     res.status(500).json({
       error: "Database query failed",
       details: err.message,
@@ -1102,7 +1101,7 @@ app.put("/carroutes/:id", async (req, res) => {
 
     res.json({ message: "Route and stations updated successfully!" });
   } catch (err) {
-    console.error("❌ PUT /carroutes/:id error:", err);
+    console.error("PUT /carroutes/:id error:", err);
     res.status(500).json({ error: "Database update failed", details: err.message });
   } finally {
     if (connection) {
@@ -1132,7 +1131,7 @@ app.delete("/carroutes/:id", async (req, res) => {
     }
     res.json({ message: "Route deleted successfully!" });
   } catch (err) {
-    console.error("❌ DELETE /carroutes/:id error:", err);
+    console.error("DELETE /carroutes/:id error:", err);
     res
       .status(500)
       .json({ error: "Database delete failed", details: err.message });
@@ -1379,7 +1378,7 @@ app.get("/TRIP", async (req, res) => {
     res.json(trips);
 
   } catch (err) {
-    console.error("❌ GET /TRIP error:", err);
+    console.error("GET /TRIP error:", err);
     res.status(500).json({ error: "DB Error", details: err.message });
   } finally {
     if (connection) await connection.close();
@@ -1403,7 +1402,7 @@ app.get("/TRIP/:id", async (req, res) => {
     if (result.rows.length === 0) return res.status(404).json({ error: "TRIP not found" });
     res.json(result.rows[0]);
   } catch (err) {
-    console.error("❌ GET /TRIP/:id error:", err);
+    console.error("GET /TRIP/:id error:", err);
     res.status(500).json({ error: "DB Error", details: err.message });
   } finally {
     if (connection) await connection.close();
@@ -1432,7 +1431,7 @@ app.post("/TRIP", async (req, res) => {
     );
     res.status(201).json({ message: "TRIP created", TRIP_ID: result.outBinds.ID[0] });
   } catch (err) {
-    console.error("❌ POST /TRIP error:", err);
+    console.error("POST /TRIP error:", err);
     res.status(500).json({ error: "DB Error", details: err.message });
   } finally {
     if (connection) await connection.close();
@@ -1460,7 +1459,7 @@ app.put("/TRIP/:id", async (req, res) => {
     if (result.rowsAffected === 0) return res.status(404).json({ error: "TRIP not found" });
     res.json({ message: "TRIP updated" });
   } catch (err) {
-    console.error("❌ PUT /TRIP/:id error:", err);
+    console.error("PUT /TRIP/:id error:", err);
     res.status(500).json({ error: "DB Error", details: err.message });
   } finally {
     if (connection) await connection.close();
@@ -1484,7 +1483,7 @@ app.delete("/TRIP/:id", async (req, res) => {
     }
     res.json({ message: "TRIP deleted" });
   } catch (err) {
-    console.error("❌ DELETE /TRIP/:id error:", err);
+    console.error("DELETE /TRIP/:id error:", err);
     res.status(500).json({ error: "DB Error", details: err.message });
   } finally {
     if (connection) await connection.close();
@@ -1541,55 +1540,90 @@ app.get("/report1", async (req, res) => {
     connection = await oracledb.getConnection(dbConfig);
 
     let sql = `
-      SELECT 
-        TO_CHAR(RESERVE_DATE, 'MM') AS MONTH_NUM,
-        STARTT AS STATION,
-        COUNT(CASE WHEN STARTT IS NOT NULL THEN 1 END) AS TOTAL_UP,
-        COUNT(CASE WHEN STOPP IS NOT NULL THEN 1 END) AS TOTAL_DOWN
-      FROM RESERVE
-      WHERE 1=1
+      SELECT month_num, station_name,
+             SUM(passenger_in)   AS PASSENGER_IN,
+             SUM(passenger_out)  AS PASSENGER_OUT
+      FROM (
+        SELECT
+          EXTRACT(MONTH FROM t.DATE_TRIP) AS month_num,
+          s_in.name AS station_name,
+          COUNT(*) AS passenger_in,
+          0        AS passenger_out
+        FROM RESERVE r
+        JOIN TRIP t ON r.TRIP_ID = t.ID
+        JOIN STATION s_in ON r.STARTT = s_in.ID
+        WHERE 1=1
     `;
 
     const binds = {};
 
-    // ✅ Filter by year
+    //Filter ปี
     if (year) {
-      const gregorianYear = parseInt(year) - 543; // แปลง พ.ศ. → ค.ศ.
-      sql += ` AND EXTRACT(YEAR FROM RESERVE_DATE) = :y `;
-      binds.y = gregorianYear;
+      let yearCE = parseInt(year);
+      if (yearCE > 2500) {
+        yearCE -= 543; // แปลง พ.ศ. → ค.ศ.
+      }
+      sql += ` AND EXTRACT(YEAR FROM t.DATE_TRIP) = :y `;
+      binds.y = yearCE;
     }
 
-    // ✅ Filter by month
+    // Filter เดือน
     if (month) {
-      sql += ` AND EXTRACT(MONTH FROM RESERVE_DATE) = :m `;
+      sql += ` AND EXTRACT(MONTH FROM t.DATE_TRIP) = :m `;
       binds.m = parseInt(month);
     }
 
     sql += `
-      GROUP BY TO_CHAR(RESERVE_DATE, 'MM'), STARTT
-      ORDER BY TO_CHAR(RESERVE_DATE, 'MM')
+        GROUP BY EXTRACT(MONTH FROM t.DATE_TRIP), s_in.name
+        UNION ALL
+        SELECT
+          EXTRACT(MONTH FROM t.DATE_TRIP) AS month_num,
+          s_out.name AS station_name,
+          0        AS passenger_in,
+          COUNT(*) AS passenger_out
+        FROM RESERVE r
+        JOIN TRIP t ON r.TRIP_ID = t.ID
+        JOIN STATION s_out ON r.STOPT = s_out.ID
+        WHERE 1=1
+    `;
+
+    //เงื่อนไขปี (ขาลง)
+    if (year) {
+      sql += ` AND EXTRACT(YEAR FROM t.DATE_TRIP) = :y `;
+    }
+
+    //เงื่อนไขเดือน (ขาลง)
+    if (month) {
+      sql += ` AND EXTRACT(MONTH FROM t.DATE_TRIP) = :m `;
+    }
+
+    sql += `
+        GROUP BY EXTRACT(MONTH FROM t.DATE_TRIP), s_out.name
+      ) x
+      GROUP BY month_num, station_name
+      ORDER BY month_num, station_name
     `;
 
     const result = await connection.execute(sql, binds);
 
-    // ✅ แปลงผลลัพธ์ให้อ่านง่าย
+    // แปลงผลลัพธ์ให้อยู่ในรูปแบบที่ต้องการ
     const rows = result.rows.map(r => ({
-      MONTH: r[0],
-      STATION: r[1],
-      UP: r[2],
-      DOWN: r[3]
+      MONTH: r[0],          // เดือน (1–12)
+      STATION_NAME: r[1],   // ชื่อสถานี
+      PASSENGER_IN: r[2],   // จำนวนขึ้น
+      PASSENGER_OUT: r[3],  // จำนวนลง
     }));
 
     res.json(rows);
   } catch (err) {
-    console.error(err);
+    console.error("SQL Error:", err);
     res.status(500).json({ error: err.message });
   } finally {
     if (connection) {
       try {
         await connection.close();
       } catch (err) {
-        console.error(err);
+        console.error("Close conn error:", err);
       }
     }
   }
@@ -1597,20 +1631,10 @@ app.get("/report1", async (req, res) => {
 
 
 
-
-// Error handler
-app.use((err, req, res, next) => {
-  console.error("🔥 Unhandled error:", err);
-  res
-    .status(500)
-    .json({ error: "Internal server error", details: err.message });
-});
-
 // 404 handler
 app.use((req, res) => {
-  console.log(`❌ 404: ${req.method} ${req.url} not found`);
+  console.log(`404: ${req.method} ${req.url} not found`);
   res
     .status(404)
     .json({ error: `Endpoint ${req.method} ${req.url} not found` });
 });
-
