@@ -196,7 +196,7 @@ function RentInfo() {
                   <td>{b.status}</td>
                   <td>
                     <div className="action-buttons">
-                      {b.status !== "ยกเลิก" && (
+                      {b.status !== "cancel" && (
                         <>
                           <button
                             className="ticket-btn"
