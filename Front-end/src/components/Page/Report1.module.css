@@ -1,0 +1,31 @@
+.container {
+    padding: 20px;
+}
+
+.title {
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.table {
+    margin-top: 20px;
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.table th,
+.table td {
+    border: 1px solid #000;
+    padding: 8px;
+}
+
+.totalRow {
+    font-weight: bold;
+    background: #f2f2f2;
+}
+
+.chartTitle {
+    margin-top: 30px;
+    font-size: 20px;
+    font-weight: bold;
+}

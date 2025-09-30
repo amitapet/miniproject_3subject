@@ -53,6 +53,18 @@ function Positions() {
   // เพิ่ม/แก้ไขตำแหน่ง
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // ตรวจสอบชื่อซ้ำ
+    const isDuplicate = positions.some(
+      (pos) =>
+        pos.NAME.toLowerCase() === form.NAME.toLowerCase() &&
+        pos.ID !== editingId
+    );
+    if (isDuplicate) {
+      alert("ชื่อตำแหน่งนี้มีอยู่แล้ว");
+      return;
+    }
+
     try {
       const permissions = {
         MGMT_STATION: form.MGMT_STATION,
@@ -83,6 +95,7 @@ function Positions() {
         alert("เพิ่มตำแหน่งเรียบร้อยแล้ว!");
       }
 
+      // Reset form and reload data
       setForm({
         NAME: "",
         MGMT_STATION: 0,
@@ -182,14 +195,26 @@ function Positions() {
                     <td>{pos.ID}</td>
                     <td>{pos.NAME}</td>
                     <td>
-                      <button className="btn-edit" onClick={() => handleEdit(pos)}>แก้ไข</button>
-                      <button className="btn-delete" onClick={() => handleDelete(pos.ID)}>ลบ</button>
+                      <button
+                        className="btn-edit"
+                        onClick={() => handleEdit(pos)}
+                      >
+                        แก้ไข
+                      </button>
+                      <button
+                        className="btn-delete"
+                        onClick={() => handleDelete(pos.ID)}
+                      >
+                        ลบ
+                      </button>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="3" style={{ textAlign: "center" }}>ไม่พบข้อมูล</td>
+                  <td colSpan="3" style={{ textAlign: "center" }}>
+                    ไม่พบข้อมูล
+                  </td>
                 </tr>
               )}
             </tbody>
@@ -212,7 +237,9 @@ function Positions() {
                 required
               />
 
-              <p><b>จัดการสิทธิ์</b></p>
+              <p>
+                <b>จัดการสิทธิ์</b>
+              </p>
 
               <div className="permissions-checkbox">
                 {[
@@ -243,9 +270,12 @@ function Positions() {
               </div>
 
               <div className="modal-actions">
-                <button type="submit" className="btn-submit">{editingId ? "บันทึกการแก้ไข" : "เพิ่มตำแหน่ง"}</button>
+                <button type="submit" className="btn-submit">
+                  {editingId ? "บันทึกการแก้ไข" : "เพิ่มตำแหน่ง"}
+                </button>
                 <button
-                  type="button" className="btn-cancel"
+                  type="button"
+                  className="btn-cancel"
                   onClick={() => {
                     setShowModal(false);
                     setForm({
