@@ -229,22 +229,27 @@ function Schedules() {
                     {cars.map(c => <option key={c.ID} value={c.ID}>{c.ID} {c.TYPE_NAME ? ` - ${c.TYPE_NAME}` : (c.TYPE?.NAME ? ` - ${c.TYPE.NAME}` : '')}</option>)}
                   </select>
 
-                  <label>คนขับ</label>
-                    
-                    <select
-                      value={form.ID_EMPLOYEE}
-                      onChange={e => setForm({ ...form, ID_EMPLOYEE: e.target.value })}
-                      required
-                    >
-                      <option value="">เลือก</option>
-                      
+                  
+                      <label>คนขับ</label>
+                      {!form.DATE_TRIP ? (
+                        <select disabled>
+                          <option>กรุณาเลือกวันที่ก่อน</option>
+                        </select>
+                      ) : (
+                        <select
+                          value={form.ID_EMPLOYEE}
+                          onChange={(e) => setForm({ ...form, ID_EMPLOYEE: e.target.value })}
+                          required
+                        >
+                          <option value="">เลือก</option>
                           {employees
                             .filter(emp =>
                               emp.POSITION?.NAME === "Driver" &&
                               (
                                 !trips.some(trip =>
                                   trip.EMPLOYEE?.ID === emp.ID &&
-                                  trip.TRIP_ID !== editingTrip?.TRIP_ID // ✅ ยกเว้นคนขับที่อยู่ใน trip ที่กำลังแก้ไข
+                                  trip.DATE_TRIP === form.DATE_TRIP &&
+                                  trip.TRIP_ID !== editingTrip?.TRIP_ID
                                 )
                               )
                             )
@@ -253,8 +258,9 @@ function Schedules() {
                                 {emp.FNAME} {emp.LNAME}
                               </option>
                             ))}
+                        </select>
+                      )}
 
-                    </select>
 
 
                   <label>เส้นทาง</label>
