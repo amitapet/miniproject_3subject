@@ -1499,7 +1499,7 @@ app.get("/trip/route_stations/:id", async (req, res) => {
   let connection;
   try {
     const routeId = req.params.id;
-    connection = await oracledb.getConnection(dbConfig); // ✅ เพิ่มบรรทัดนี้
+    connection = await oracledb.getConnection(dbConfig); 
 
     const result = await connection.execute(
       `SELECT 

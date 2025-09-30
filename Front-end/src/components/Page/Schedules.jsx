@@ -191,7 +191,7 @@ function Schedules() {
                   <th></th>
                 </tr>
               </thead>
-              
+                    
                   <tbody>
                     {filteredTrips.map(trip => (
                       <tr key={trip.TRIP_ID}>
@@ -247,9 +247,9 @@ function Schedules() {
                               emp.POSITION?.NAME === "Driver" &&
                               (
                                 !trips.some(trip =>
-                                  trip.EMPLOYEE?.ID === emp.ID &&
-                                  trip.DATE_TRIP === form.DATE_TRIP &&
-                                  trip.TRIP_ID !== editingTrip?.TRIP_ID
+                                  trip.EMPLOYEE?.ID === emp.ID && //ตรวจสอบว่า พนักงานคนนี้ (emp) ถูกใช้เป็นคนขับใน TRIP ไหนหรือไม่
+                                  trip.DATE_TRIP === form.DATE_TRIP && //กรองเฉพาะ TRIP ที่อยู่ในวันเดียวกัน
+                                  trip.TRIP_ID !== editingTrip?.TRIP_ID //ยกเว้นคนขับที่อยู่ใน TRIP ที่กำลังแก้ไข
                                 )
                               )
                             )
