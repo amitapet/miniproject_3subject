@@ -93,7 +93,7 @@ function Sidebar() {
             {showReportDropdown && (
               <ul className="dropdown-menu">
                 <li>
-                  <a href="/reports/report1">รายงาน 1</a>
+                  <a href="/report1">รายงาน 1</a>
                 </li>
                 <li>
                   <a href="/reports/report3">รายงาน 3</a>

@@ -116,17 +116,17 @@ function Schedules() {
   });
 
 
-//===================ส่วนดึงสถานีเมื่อเลือก route===============
- useEffect(() => {
-  if (form.ID_ROUTE) {
-    axios.get(`http://localhost:3000/trip/route_stations/${form.ID_ROUTE}`)
-      .then(res => setRouteStations(res.data))
-      .catch(err => console.error(err));
-  } else {
-    setRouteStations([]);
-  }
+  //===================ส่วนดึงสถานีเมื่อเลือก route===============
+  useEffect(() => {
+    if (form.ID_ROUTE) {
+      axios.get(`http://localhost:3000/trip/route_stations/${form.ID_ROUTE}`)
+        .then(res => setRouteStations(res.data))
+        .catch(err => console.error(err));
+    } else {
+      setRouteStations([]);
+    }
   }, [form.ID_ROUTE]);
-//====================================
+  //====================================
 
 
 
@@ -186,12 +186,12 @@ function Schedules() {
                   <th>รถ</th>
                   <th>คนขับ</th>
                   <th>เวลาออก (นาฬิกา)</th>
-                  <th>เวลาเดินทาง (นาที)</th> 
+                  <th>เวลาเดินทาง (นาที)</th>
                   <th>วันที่</th>
                   <th></th>
                 </tr>
               </thead>
-                    
+              
                   <tbody>
                     {filteredTrips.map(trip => (
                       <tr key={trip.TRIP_ID}>
@@ -247,9 +247,9 @@ function Schedules() {
                               emp.POSITION?.NAME === "Driver" &&
                               (
                                 !trips.some(trip =>
-                                  trip.EMPLOYEE?.ID === emp.ID && //ตรวจสอบว่า พนักงานคนนี้ (emp) ถูกใช้เป็นคนขับใน TRIP ไหนหรือไม่
-                                  trip.DATE_TRIP === form.DATE_TRIP && //กรองเฉพาะ TRIP ที่อยู่ในวันเดียวกัน
-                                  trip.TRIP_ID !== editingTrip?.TRIP_ID //ยกเว้นคนขับที่อยู่ใน TRIP ที่กำลังแก้ไข
+                                  trip.EMPLOYEE?.ID === emp.ID &&
+                                  trip.DATE_TRIP === form.DATE_TRIP &&
+                                  trip.TRIP_ID !== editingTrip?.TRIP_ID
                                 )
                               )
                             )
@@ -268,32 +268,32 @@ function Schedules() {
                     <option value="">เลือก</option>
                     {routes.map(r => <option key={r.ID} value={r.ID}>{r.NAME_ROUTE}</option>)}
                   </select>
-                  
-                  
-                      {/* ตารางสถานีของเส้นทางที่เลือก */}
-                      {routeStations.length > 0 && (
+
+
+                  {/* ตารางสถานีของเส้นทางที่เลือก */}
+                  {routeStations.length > 0 && (
 
                     <div className="route-stations">
                       <h4>จุดจอดในเส้นทาง</h4>
                       <div className="scroll">
-                      <table className="stations-table">
-                        <thead>
-                          <tr>
-                            <th>ลำดับ</th>
-                            <th>สถานี</th>
-                            <th>เวลาเดินทาง (นาที)</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {routeStations.map(st => (
-                            <tr key={st.ROUTE_STATIONS_ID}>
-                              <td>{st.SEQ_NO}</td>
-                              <td>{st.STATION_NAME}</td>
-                              <td>{st.STATION_TIME}</td>
+                        <table className="stations-table">
+                          <thead>
+                            <tr>
+                              <th>ลำดับ</th>
+                              <th>สถานี</th>
+                              <th>เวลาเดินทาง (นาที)</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody>
+                            {routeStations.map(st => (
+                              <tr key={st.ROUTE_STATIONS_ID}>
+                                <td>{st.SEQ_NO}</td>
+                                <td>{st.STATION_NAME}</td>
+                                <td>{st.STATION_TIME}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
                     </div>
 
