@@ -12,7 +12,9 @@
   "description": "",
   "dependencies": {
     "cors": "^2.8.5",
-    "oracledb": "^6.9.0"
+    "oracledb": "^6.9.0",
+    "qrcode.react": "^4.2.0",
+    "react-qr-reader": "^3.0.0-beta-1"
   },
   "devDependencies": {
     "express": "^5.1.0",

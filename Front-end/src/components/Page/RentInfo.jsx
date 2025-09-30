@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 //import { useNavigate } from "react-router-dom";
+import { QRCodeCanvas } from "qrcode.react";
 import Sidebar from "../Sidebar";
 import { FaSearch } from "react-icons/fa";
 import "./Customer.css";
@@ -12,6 +13,7 @@ function RentInfo() {
   const [carType, setCarType] = useState(""); // ประเภทรถ
   const [seats, setSeats] = useState(""); // จำนวนที่นั่ง
   const [filteredBookings, setFilteredBookings] = useState([]); //filterแล้ว
+  const [selectedBooking, setSelectedBooking] = useState(null);
 
   useEffect(() => {
     const fetchBookings = async () => {
@@ -67,9 +69,7 @@ function RentInfo() {
   };
 
   const handleTicket = (booking) => {
-    alert(
-      `ตั๋วของคุณ\n\nจาก ${booking.origin} ไป ${booking.destination}\nรถ: ${booking.vehicle}\nเวลาออก: ${booking.startDate} ${booking.startTime}\nถึง: ${booking.arrivalDate} ${booking.arrivalTime}\nที่นั่ง: ${booking.seats}`
-    );
+    setSelectedBooking(booking);
   };
 
   const handleSearch = () => {
@@ -93,6 +93,30 @@ function RentInfo() {
       <Sidebar />
       <title>รายการจอง</title>
       <div className="rentinfo-content">
+        {selectedBooking && (
+          <div className="ticket-modal">
+            <div className="ticket-content">
+              <h3>ตั๋วของคุณ</h3>
+              <p>
+                จาก {selectedBooking.origin} ไป {selectedBooking.destination}
+              </p>
+              <p>รถ: {selectedBooking.vehicle}</p>
+              <p>
+                เวลาออก: {selectedBooking.startDate} {selectedBooking.startTime}
+              </p>
+              <p>
+                ถึง: {selectedBooking.arrivalDate} {selectedBooking.arrivalTime}
+              </p>
+              <p>ที่นั่ง: {selectedBooking.seats}</p>
+
+              <QRCodeCanvas value={String(selectedBooking.id)} size={120} />
+              <br />
+              <br />
+              <button onClick={() => setSelectedBooking(null)}>ปิด</button>
+            </div>
+          </div>
+        )}
+
         {/* Filter bar */}
         <div className="search-bar">
           <label>

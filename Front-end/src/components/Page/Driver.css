@@ -234,6 +234,19 @@
   background: #681b04;
 }
 
+.btn-end:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  color: #666;
+}
+
+.btn-end:disabled:hover{
+  background-color: #ccc;
+  cursor: not-allowed;
+  color: #666;
+}
+
+
 .btn-route {
   background: #365c7e;
   color: white;
@@ -289,4 +302,27 @@
 .passenger-table th {
   background: #0d3d91;
   color: white;
+}
+
+.scanner-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.qr-scan-section button {
+  background-color: #cc6d3d;
+  color: rgb(255, 255, 255);
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
 }

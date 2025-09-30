@@ -1,7 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { FaSearch } from "react-icons/fa";
+import { QrReader } from "react-qr-reader";
+import { FaQrcode, FaSearch } from "react-icons/fa";
 import "./Driver.css";
 
 function Currentjob() {
@@ -11,6 +12,7 @@ function Currentjob() {
   const [schedule, setSchedule] = useState(null);
 
   const [showEndModal, setShowEndModal] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
 
   //Nowork
   const [noWork, setNoWork] = useState(false);
@@ -97,6 +99,42 @@ function Currentjob() {
     }
   };
 
+  const handleScanResult = async (result) => {
+    if (!result) return;
+
+    const scannedId = result.text; // เลข QR code
+    setShowScanner(false);
+
+    try {
+      // ✅ ตรวจสอบว่า QR อยู่ใน trip นี้ไหม
+      const resCheck = await axios.get(
+        `http://localhost:3000/work/checkcus/${tripId}/${scannedId}`
+      );
+
+      if (!resCheck.data.valid) {
+        alert("⚠️ QR Code นี้ไม่ตรงกับรอบงานปัจจุบัน");
+        return;
+      }
+
+      // ✅ ถ้า pass → update status
+      const resUpdate = await axios.put("http://localhost:3000/work/scan", {
+        reserve_id: scannedId,
+      });
+
+      alert(resUpdate.data.message || "อัปเดตสถานะเรียบร้อยแล้ว");
+
+      // รีเฟรชข้อมูลผู้โดยสาร
+      const resPassengers = await axios.get(
+        `http://localhost:3000/assignmentdetail/${tripId}`
+      );
+      setPassengers(resPassengers.data);
+    } catch (err) {
+      console.error(err);
+      const msg = err.response?.data?.error || "ไม่สามารถอัปเดตสถานะได้";
+      alert(msg);
+    }
+  };
+
   const filteredPassengers = passengers.filter((p) => {
     return (
       (!pickupFilter || p.PICKUP_NAME === pickupFilter) &&
@@ -179,6 +217,31 @@ function Currentjob() {
             </button>
           </div>
 
+          <div className="qr-scan-section">
+            <button onClick={() => setShowScanner(true)}>
+              <FaQrcode />
+            </button>
+
+            {showScanner && (
+              <div className="scanner-modal">
+                <QrReader
+                  constraints={{ facingMode: "environment" }}
+                  style={{ width: "100%", maxWidth: 400 }}
+                  onResult={(result, error) => {
+                    if (result !== null) {
+                      handleScanResult(result);
+                    }
+
+                    if (error) {
+                      console.warn(error);
+                    }
+                  }}
+                />
+                <button onClick={() => setShowScanner(false)}>ปิด</button>
+              </div>
+            )}
+          </div>
+
           <h3>ข้อมูลผู้โดยสาร</h3>
           <table className="passenger-table">
             <thead>
@@ -212,7 +275,7 @@ function Currentjob() {
           {/* ปุ่มจบงาน */}
           {tripId && (
             <div className="job-buttons">
-              <button className="btn-end" onClick={() => setShowEndModal(true)}>
+              <button className="btn-end" onClick={() => setShowEndModal(true)} disabled={passengers.some(p => !p.STATUS || p.STATUS === "-")}>
                 จบงาน
               </button>
             </div>

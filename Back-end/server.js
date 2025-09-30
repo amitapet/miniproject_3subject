@@ -404,12 +404,39 @@ app.get("/work/check/:empId", async (req, res) => {
     );
 
     if (result.rows.length > 0) {
-      return res.json({ hasWork: true, tripId: result.rows[0].TRIP_ID });
+      return res.json({ hasWork: true, empId: result.rows[0].TRIP_ID });
     }
 
     res.json({ hasWork: false });
   } catch (err) {
     console.error("❌ GET /work/check/:empId error:", err);
+    res.status(500).json({ error: "DB Error", details: err.message });
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+
+app.get("/work/checkcus/:tripId/:reserveId", async (req, res) => {
+  let connection;
+  try {
+    const { tripId, reserveId } = req.params;
+    connection = await oracledb.getConnection(dbConfig);
+
+    const result = await connection.execute(
+      `SELECT id, trip_id
+       FROM RESERVE
+       WHERE TRIP_ID = :tripId AND ID = :reserveId`,
+      { tripId, reserveId },
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    if (result.rows.length > 0) {
+      return res.json({ valid: true });
+    }
+
+    res.json({ valid: false });
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "DB Error", details: err.message });
   } finally {
     if (connection) await connection.close();
@@ -448,6 +475,33 @@ app.post("/work", async (req, res) => {
     res.json({ message: "✅ เริ่มงานเรียบร้อยแล้ว" });
   } catch (err) {
     console.error("❌ POST /work error:", err);
+    res.status(500).json({ error: "DB Error", details: err.message });
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+
+app.put("/work/scan", async (req, res) => {
+  let connection;
+  try {
+    const { reserve_id } = req.body;
+    connection = await oracledb.getConnection(dbConfig);
+
+    const result = await connection.execute(
+      `UPDATE RESERVE 
+       SET status = 'getin'
+       WHERE id = :reserve_id`,
+      { reserve_id },
+      { autoCommit: true }
+    );
+
+    if (result.rowsAffected === 0) {
+      return res.status(404).json({ error: "ไม่พบ ID แสกน" });
+    }
+
+    res.json({ message: "แสกนเรียบร้อยแล้ว" });
+  } catch (err) {
+    console.error("❌ PUT /work/scan error:", err);
     res.status(500).json({ error: "DB Error", details: err.message });
   } finally {
     if (connection) await connection.close();
