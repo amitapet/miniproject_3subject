@@ -23,6 +23,7 @@ import Assignment from "./components/Page/Assignment";
 import Currentjob from "./components/Page/Currentjob";
 import Rent from "./components/Page/Rent";
 import RentInfo from "./components/Page/RentInfo";
+import Reportforceo from "./components/Page/reportfoeceo";
 
 
 const router = createBrowserRouter([
@@ -51,6 +52,7 @@ const router = createBrowserRouter([
   { path: "/current-job", element: <Layout><Currentjob /></Layout> },
   { path: "/Rent", element: <Layout><Rent /></Layout> },
   { path: "/RentInfo", element: <Layout><RentInfo /></Layout> },
+  { path: "/reportforceo", element: <Layout><Reportforceo /></Layout> },
 
 ]);
 

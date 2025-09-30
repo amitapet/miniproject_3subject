@@ -24,7 +24,7 @@ const dbConfig = {
   password: "64812",
   connectString: `(DESCRIPTION=
     (ADDRESS=(PROTOCOL=TCP)(HOST=203.188.54.7)(PORT=1521))
-    (CONNECT_DATA=(SID=Database))
+    (CONNECT_DATA=(SID=Database3))
   )`,
 };
 
@@ -458,7 +458,8 @@ app.put("/POSITION/:id", async (req, res) => {
           PROFILE = :PROFILE,
           WORK_SCHEDULE = :WORK_SCHEDULE,
           ASSIGNMENT = :ASSIGNMENT,
-          CURRENTJOB = :CURRENTJOB
+          CURRENTJOB = :CURRENTJOB,
+          REPORTFORCEO = :REPORTFORCEO,
          WHERE ID = :ID`,
         { ID: permissionId, ...permissions }
       );
@@ -666,10 +667,13 @@ app.get("/Employee", async (req, res) => {
       password: row[5],
       id_department: row[6],
       id_position: row[7],
-      DEPARTMENT_NAME: row[8],
-      POSITION_NAME: row[9],
-
+      DEPARTMENT_NAME: row[8], // สำหรับตารางแสดงผล
+      POSITION_NAME: row[9],   // สำหรับตารางแสดงผล
+      DEPARTMENT: row[8] ? { ID: row[6], NAME: row[8] } : null, // สำหรับ combobox
+      POSITION: row[9] ? { ID: row[7], NAME: row[9] } : null     // สำหรับ combobox
     }));
+
+
 
     res.json(Employee);
   } catch (err) {
@@ -842,7 +846,7 @@ app.get("/stations", async (req, res) => {
     }
   }
 });
-
+//========================= API ดึงเส้นทาง =========================================================
 // GET all routes
 app.get("/carroutes", async (req, res) => {
   let connection;
@@ -1198,6 +1202,201 @@ app.delete("/CARS/:id", async (req, res) => {
   }
 });
 
+
+// =========================== ส่วนของ API TRIP =============================
+
+// ---------- GET TRIP ทั้งหมด (คืน DATE_TRIP เป็น 'YYYY-MM-DD' string เพื่อเลี่ยง timezone) ----------
+app.get("/TRIP", async (req, res) => {
+  let connection;
+  try {
+    connection = await oracledb.getConnection();
+    const result = await connection.execute(
+      `SELECT 
+          t.ID AS TRIP_ID,
+          TO_CHAR(t.DATE_TRIP,'YYYY-MM-DD') AS DATE_TRIP,
+          t.TIMEOUT,
+          c.ID AS CAR_ID, c.SEAT,
+          tc.ID AS TYPECAR_ID, tc.NAME AS TYPECAR_NAME,
+          e.ID AS EMPLOYEE_ID, e.FNAME || ' ' || e.LNAME AS EMPLOYEE_NAME,
+          p.ID AS POSITION_ID, p.NAME AS POSITION_NAME,
+          r.ID AS ROUTE_ID, r.NAME_ROUTE, r.TOTALSUM_TIME,
+          s.ID AS STATION_ID, s.NAME AS STATION_NAME,
+          rs.ID AS ROUTE_STATIONS_ID, rs.STATION_TIME, rs.SEQ_NO
+       FROM TRIP t
+        LEFT JOIN CAR c ON t.ID_CAR = c.ID
+        LEFT JOIN TYPE_CAR tc ON c.ID_TYPECAR = tc.ID
+        LEFT JOIN EMPLOYEE e ON t.ID_EMPLOYEE = e.ID
+        LEFT JOIN POSITION p ON e.ID_POSITION = p.ID
+        LEFT JOIN ROUTE r ON t.ID_ROUTE = r.ID
+        LEFT JOIN ROUTE_STATIONS rs ON r.ID = rs.ID_ROUTE
+        LEFT JOIN STATION s ON rs.STOPS_ID = s.ID
+       ORDER BY t.ID, rs.SEQ_NO`,
+      [], { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    // Build JSON same as before (DATE_TRIP now is string 'YYYY-MM-DD')
+    const trips = result.rows.reduce((acc, row) => {
+      let trip = acc.find(t => t.TRIP_ID === row.TRIP_ID);
+      if (!trip) {
+        trip = {
+          TRIP_ID: row.TRIP_ID,
+          DATE_TRIP: row.DATE_TRIP,
+          TIMEOUT: row.TIMEOUT,
+          CAR: row.CAR_ID ? {
+            ID: row.CAR_ID,
+            SEAT: row.SEAT,
+            TYPE: row.TYPECAR_ID ? { ID: row.TYPECAR_ID, NAME: row.TYPECAR_NAME } : null
+          } : null,
+          EMPLOYEE: row.EMPLOYEE_ID ? {
+            ID: row.EMPLOYEE_ID,
+            NAME: row.EMPLOYEE_NAME,
+            POSITION: row.POSITION_ID ? { ID: row.POSITION_ID, NAME: row.POSITION_NAME } : null
+          } : null,
+          ROUTE: row.ROUTE_ID ? {
+            ID: row.ROUTE_ID,
+            NAME: row.NAME_ROUTE,
+            TOTALSUM_TIME: row.TOTALSUM_TIME,
+            STATIONS: []
+          } : null
+        };
+        acc.push(trip);
+      }
+
+      if (trip.ROUTE && row.ROUTE_STATIONS_ID) {
+        trip.ROUTE.STATIONS.push({
+          ROUTE_STATIONS_ID: row.ROUTE_STATIONS_ID,
+          STATION_ID: row.STATION_ID,
+          STATION_NAME: row.STATION_NAME,
+          STATION_TIME: row.STATION_TIME,
+          SEQ_NO: row.SEQ_NO
+        });
+      }
+      return acc;
+    }, []);
+
+    res.json(trips);
+
+  } catch (err) {
+    console.error("❌ GET /TRIP error:", err);
+    res.status(500).json({ error: "DB Error", details: err.message });
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+
+// ---------- GET TRIP by id ----------
+app.get("/TRIP/:id", async (req, res) => {
+  const { id } = req.params;
+  let connection;
+  try {
+    connection = await oracledb.getConnection();
+    const result = await connection.execute(
+      `SELECT ID,
+              TO_CHAR(DATE_TRIP,'YYYY-MM-DD') AS DATE_TRIP,
+              TIMEOUT, ID_CAR, ID_ROUTE, ID_EMPLOYEE
+       FROM TRIP WHERE ID = :id`,
+      [id],
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: "TRIP not found" });
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("❌ GET /TRIP/:id error:", err);
+    res.status(500).json({ error: "DB Error", details: err.message });
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+
+// ---------- POST TRIP (ใช้ TO_DATE เพื่อรับ 'YYYY-MM-DD' string safely) ----------
+app.post("/TRIP", async (req, res) => {
+  const { DATE_TRIP, TIMEOUT, ID_CAR, ID_EMPLOYEE, ID_ROUTE } = req.body;
+  let connection;
+  try {
+    connection = await oracledb.getConnection();
+    const result = await connection.execute(
+      `INSERT INTO TRIP (ID, DATE_TRIP, TIMEOUT, ID_CAR, ID_EMPLOYEE, ID_ROUTE)
+       VALUES ((SELECT NVL(MAX(ID),0)+1 FROM TRIP), TO_DATE(:DATE_TRIP,'YYYY-MM-DD'), :TIMEOUT, :ID_CAR, :ID_EMPLOYEE, :ID_ROUTE)
+       RETURNING ID INTO :ID`,
+      {
+        DATE_TRIP,
+        TIMEOUT,
+        ID_CAR,
+        ID_EMPLOYEE,
+        ID_ROUTE,
+        ID: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER }
+      },
+      { autoCommit: true }
+    );
+    res.status(201).json({ message: "TRIP created", TRIP_ID: result.outBinds.ID[0] });
+  } catch (err) {
+    console.error("❌ POST /TRIP error:", err);
+    res.status(500).json({ error: "DB Error", details: err.message });
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+
+
+// ---------- PUT TRIP (แก้ไข) ----------
+app.put("/TRIP/:id", async (req, res) => {
+  const { id } = req.params;
+  const { DATE_TRIP, TIMEOUT, ID_CAR, ID_EMPLOYEE, ID_ROUTE } = req.body;
+  let connection;
+  try {
+    connection = await oracledb.getConnection();
+    const result = await connection.execute(
+      `UPDATE TRIP SET DATE_TRIP = TO_DATE(:DATE_TRIP,'YYYY-MM-DD'),
+                       TIMEOUT = :TIMEOUT,
+                       ID_CAR = :ID_CAR,
+                       ID_EMPLOYEE = :ID_EMPLOYEE,
+                       ID_ROUTE = :ID_ROUTE
+       WHERE ID = :ID`,
+      { DATE_TRIP, TIMEOUT, ID_CAR, ID_EMPLOYEE, ID_ROUTE, ID: id },
+      { autoCommit: true }
+    );
+    if (result.rowsAffected === 0) return res.status(404).json({ error: "TRIP not found" });
+    res.json({ message: "TRIP updated" });
+  } catch (err) {
+    console.error("❌ PUT /TRIP/:id error:", err);
+    res.status(500).json({ error: "DB Error", details: err.message });
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+
+
+// ----- DELETE TRIP -----
+app.delete("/TRIP/:id", async (req, res) => {
+  const { id } = req.params;
+  let connection;
+  try {
+    connection = await oracledb.getConnection();
+    const result = await connection.execute(
+      `DELETE FROM TRIP WHERE ID = :ID`,
+      [Number(id)],
+      { autoCommit: true }
+    );
+    if (result.rowsAffected === 0) {
+      return res.status(404).json({ error: "TRIP not found" });
+    }
+    res.json({ message: "TRIP deleted" });
+  } catch (err) {
+    console.error("❌ DELETE /TRIP/:id error:", err);
+    res.status(500).json({ error: "DB Error", details: err.message });
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+
+
+
+
+
+
+
+
+
 // Error handler
 app.use((err, req, res, next) => {
   console.error("🔥 Unhandled error:", err);
@@ -1213,4 +1412,11 @@ app.use((req, res) => {
     .status(404)
     .json({ error: `Endpoint ${req.method} ${req.url} not found` });
 });
+
+
+
+
+
+
+
 
