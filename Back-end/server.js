@@ -231,8 +231,7 @@ app.get("/assignment", async (req, res) => {
         t.id_employee, ty.name, 
         COUNT(t.id) AS trip_count
       FROM trip t
-      LEFT JOIN stop_duration s ON t.id = s.id_trip
-      LEFT JOIN route r ON s.id_route = r.id
+      LEFT JOIN route r ON t.id_route = r.id
       LEFT JOIN car ON t.id_car = car.id
       LEFT JOIN type_car ty ON car.id_typecar = ty.id
       WHERE t.id_employee IS NULL
@@ -266,8 +265,7 @@ app.get("/assignment/:empId", async (req, res) => {
         t.id_employee, ty.name, 
         COUNT(t.id) AS trip_count
       FROM trip t
-      LEFT JOIN stop_duration s ON t.id = s.id_trip
-      LEFT JOIN route r ON s.id_route = r.id
+      LEFT JOIN route r ON t.id_route = r.id
       LEFT JOIN car ON t.id_car = car.id
       LEFT JOIN type_car ty ON car.id_typecar = ty.id
       WHERE t.id_employee = :empId
@@ -344,8 +342,7 @@ app.get("/workdetail/:tripId", async (req, res) => {
         t.id_employee, ty.name, 
         COUNT(t.id) AS trip_count
       FROM trip t
-      LEFT JOIN stop_duration s ON t.id = s.id_trip
-      LEFT JOIN route r ON s.id_route = r.id
+      LEFT JOIN route r ON t.id_route = r.id
       LEFT JOIN car ON t.id_car = car.id
       LEFT JOIN type_car ty ON car.id_typecar = ty.id
       WHERE t.id = :tripId

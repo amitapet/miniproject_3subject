@@ -275,7 +275,8 @@ function Currentjob() {
           {/* ปุ่มจบงาน */}
           {tripId && (
             <div className="job-buttons">
-              <button className="btn-end" onClick={() => setShowEndModal(true)} disabled={passengers.some(p => !p.STATUS || p.STATUS === "-")}>
+              <button className="btn-end" onClick={() => setShowEndModal(true)} 
+              disabled={passengers.some(p => !p.STATUS || p.STATUS === "-")}>
                 จบงาน
               </button>
             </div>
