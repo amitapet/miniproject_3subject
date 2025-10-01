@@ -1,61 +1,62 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import Sidebar from "../Sidebar";
 import { FaSearch } from "react-icons/fa";
 import "./Customer.css";
 
 function Rent() {
-  const navigate = useNavigate();
+  const user = JSON.parse(localStorage.getItem("user"));
+  const cus_id = user.id;
+
+  const [stations, setStations] = useState([]);
   const [schedules, setSchedules] = useState([]);
   const [form, setForm] = useState({
-    origin: "",
-    destination: "",
+    origin: { id: "", name: "" },
+    destination: { id: "", name: "" },
     vehicle: "ทุกประเภท",
     date: "",
     seats: 1,
   });
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 10; // จำนวนแถวต่อหน้า
+
   useEffect(() => {
-    // mock data
-    const mockData = [
-      {
-        id: 1,
-        date: "01/01/68",
-        time: "9:30 น.",
-        type: "รถบัส",
-        available: 4,
-        duration: 12,
-        origin: "Big C หนองออก",
-        destination: "มหาวิทยาลัยเทคโนโลยีมหานคร",
-      },
-      {
-        id: 2,
-        date: "01/01/68",
-        time: "9:32 น.",
-        type: "รถตู้",
-        available: 2,
-        duration: 30,
-        origin: "มหาวิทยาลัยเทคโนโลยีมหานคร",
-        destination: "มหาวิทยาลัยเทคโนโลยีมหานคร",
-      },
-      {
-        id: 3,
-        date: "01/01/68",
-        time: "9:35 น.",
-        type: "รถตู้",
-        available: 6,
-        duration: 13,
-        origin: "มหาวิทยาลัยเทคโนโลยีมหานคร",
-        destination: "ร้านส้มตำเป๋าปาง",
-      },
-    ];
-    setSchedules(mockData);
+    const fetchStations = async () => {
+      try {
+        const res = await axios.get("http://localhost:3000/rstation");
+        const mapped = res.data.map((s) => ({
+          id: s.ID ?? s.id,
+          name: s.NAME ?? s.name,
+        }));
+        setStations(mapped);
+      } catch (error) {
+        console.error("❌ โหลดข้อมูลสถานีไม่สำเร็จ:", error);
+      }
+    };
+    fetchStations();
   }, []);
 
-  // ฟังก์ชันคำนวณเวลา "ถึง"
-  const getArrivalTime = (time, duration) => {
-    const [hour, minute] = time.replace(" น.", "").split(":").map(Number);
+  const handleStationChange = (e, field) => {
+    const stationId = e.target.value;
+    const station = stations.find((s) => String(s.id) === stationId);
+    setForm((prev) => ({
+      ...prev,
+      [field]: station
+        ? { id: station.id, name: station.name }
+        : { id: "", name: "" },
+    }));
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const getArrivalTime = (timeout, duration = 30) => {
+    const hour = Math.floor(timeout);
+    const minute = Math.round((timeout - hour) * 60);
+
     const start = new Date();
     start.setHours(hour, minute);
     start.setMinutes(start.getMinutes() + duration);
@@ -66,75 +67,189 @@ function Rent() {
     )} น.`;
   };
 
+  const handleSearch = async () => {
+    if (!form.origin.id || !form.destination.id) {
+      alert("กรุณาเลือกต้นทางและปลายทางก่อนค้นหา");
+      return;
+    }
+
+    try {
+      const url = `http://localhost:3000/rentinfo/${form.origin.id}/${form.destination.id}`;
+      const res = await axios.get(url);
+      setSchedules(res.data);
+      setCurrentPage(1); // กลับไปหน้าแรกเมื่อค้นหาใหม่
+    } catch (error) {
+      console.error("❌ โหลดข้อมูลรอบรถไม่สำเร็จ:", error);
+      alert("เกิดข้อผิดพลาดขณะค้นหาข้อมูลรอบรถ");
+    }
+  };
+
+  // 🔹 คำนวณข้อมูลที่จะแสดงในหน้าปัจจุบัน
+  const indexOfLastRow = currentPage * rowsPerPage;
+  const indexOfFirstRow = indexOfLastRow - rowsPerPage;
+  const currentRows = schedules.slice(indexOfFirstRow, indexOfLastRow);
+  const totalPages = Math.ceil(schedules.length / rowsPerPage);
+
+  // เพิ่มฟังก์ชัน handleBooking
+  const handleBooking = async (trip) => {
+    if (!form.date) {
+      alert("กรุณาเลือกวันเดินทางก่อนจอง");
+      return;
+    }
+
+    try {
+      // เตรียมข้อมูลที่จะส่งไป backend
+      const postData = {
+        start: form.origin.id,
+        stop: form.destination.id,
+        seat: form.seats,
+        cus_id: cus_id,
+        route_id: trip.ID_ROUTE,
+        trip_id: trip.ID,
+      };
+
+      const res = await axios.post("http://localhost:3000/rent", postData);
+
+      alert(res.data.message);
+    } catch (err) {
+      console.error("❌ จองไม่สำเร็จ:", err);
+      alert("เกิดข้อผิดพลาดขณะจอง");
+    }
+  };
+
   return (
     <div className="rent-container">
       <Sidebar />
       <title>จองรอบรถ</title>
       <div className="rent-content">
-        {/* ฟอร์มค้นหา */}
         <div className="search-bar">
           <label>
             ต้นทาง :
-            <select>
-              <option>โลตัสหนองจอก</option>
+            <select
+              value={form.origin.id}
+              onChange={(e) => handleStationChange(e, "origin")}
+            >
+              <option value="">-- เลือกต้นทาง --</option>
+              {stations.map((station) => (
+                <option key={station.id} value={station.id}>
+                  {station.name}
+                </option>
+              ))}
             </select>
           </label>
+
           <label>
             ปลายทาง :
-            <select>
-              <option>ร้านส้มตำเป๋าปาง</option>
+            <select
+              value={form.destination.id}
+              onChange={(e) => handleStationChange(e, "destination")}
+            >
+              <option value="">-- เลือกปลายทาง --</option>
+              {stations.map((station) => (
+                <option key={station.id} value={station.id}>
+                  {station.name}
+                </option>
+              ))}
             </select>
           </label>
 
           <label>
             ประเภทรถ :
-            <select>
+            <select name="vehicle" value={form.vehicle} onChange={handleChange}>
               <option>ทุกประเภท</option>
+              <option>รถบัส</option>
+              <option>รถตู้</option>
             </select>
           </label>
 
           <label>
             วันเดินทาง :
-            <input type="date" />
+            <input
+              type="date"
+              name="date"
+              value={form.date}
+              onChange={handleChange}
+            />
           </label>
 
           <label>
             ที่นั่ง :
-            <input type="number" min="1" defaultValue={1} />
+            <input
+              type="number"
+              name="seats"
+              min="1"
+              value={form.seats}
+              onChange={handleChange}
+            />
           </label>
 
-          <button className="search-btn">
+          <button className="search-btn" onClick={handleSearch}>
             <FaSearch />
           </button>
         </div>
 
-        {/* ตาราง */}
         <table className="table-container">
           <thead>
             <tr>
               <th>วันที่</th>
               <th>เวลาออกรถ</th>
               <th>ประเภทรถ</th>
-              <th>ที่นั่งว่าง</th>
-              <th>เวลาที่ถึง</th>
+              <th>จำนวนที่นั่ง</th>
+              <th>เวลาถึง (ประมาณ)</th>
               <th>การจัดการ</th>
             </tr>
           </thead>
           <tbody>
-            {schedules.map((s) => (
-              <tr key={s.id}>
-                <td>{s.date}</td>
-                <td>{s.time}</td>
-                <td>{s.type}</td>
-                <td>{s.available}</td>
-                <td>{getArrivalTime(s.time, s.duration)}</td>
-                <td>
-                  <button className="book-btn">จอง</button>
+            {currentRows.length > 0 ? (
+              currentRows.map((trip) => (
+                <tr key={trip.ID}>
+                  <td>{trip.DATE_TRIP}</td>
+                  <td>{trip.TIMEOUT}</td>
+                  <td>{trip.NAME}</td>
+                  <td>{trip.SEAT}</td>
+                  <td>{getArrivalTime(trip.TIMEOUT)}</td>
+                  <td>
+                    <button
+                      className="book-btn"
+                      onClick={() => handleBooking(trip)}
+                    >
+                      จอง
+                    </button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="6" style={{ textAlign: "center" }}>
+                  ไม่มีข้อมูลรอบรถ
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
+
+        {/* 🔹 Pagination */}
+        {schedules.length > rowsPerPage && (
+          <div className="pagination">
+            <button
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+            >
+              ก่อนหน้า
+            </button>
+            <span>
+              หน้า {currentPage} / {totalPages}
+            </span>
+            <button
+              onClick={() =>
+                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+              }
+              disabled={currentPage === totalPages}
+            >
+              ถัดไป
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

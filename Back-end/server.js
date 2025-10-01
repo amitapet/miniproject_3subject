@@ -146,6 +146,103 @@ app.post("/login", async (req, res) => {
 //สิ้นสุดส่วนของ API login
 
 // GET RESERVE
+app.get("/rstation", async (req, res) => {
+  let connection;
+  try {
+    connection = await oracledb.getConnection(dbConfig);
+
+    const result = await connection.execute(
+      `select id,name from station order by id`,
+      {}, // bind parameter
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error("❌ GET /rstation error:", err);
+    res.status(500).json({ error: "DB Error", details: err.message });
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+
+app.get("/rentinfo/:start/:stop", async (req, res) => {
+  let connection;
+  try {
+    connection = await oracledb.getConnection(dbConfig);
+    const start = req.params.start;
+    const stop = req.params.stop;
+
+    const result = await connection.execute(
+      `select t.id,t.ID_ROUTE, t.date_trip ,t.timeout ,t.ID_CAR, tcar.name, car.seat 
+        from trip t
+        join car on car.id = t.ID_CAR
+        join TYPE_CAR tcar on tcar.id = car.ID_TYPECAR
+        join ROUTE_STATIONS rs on rs.ID_ROUTE = t.ID_ROUTE
+        where rs.STOPS_ID = :p_start
+        group by t.id,t.ID_ROUTE, t.date_trip ,t.timeout ,t.ID_CAR, tcar.name, car.seat
+        having t.id in (
+          select t.id
+          from trip t
+          join ROUTE_STATIONS rs on rs.ID_ROUTE = t.ID_ROUTE
+          where rs.STOPS_ID = :p_stop)`,
+      { p_start: start, p_stop: stop },
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error("❌ GET /rentinfo/:start/:stop error:", err);
+    res.status(500).json({ error: "DB Error", details: err.message });
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+
+app.post("/rent", async (req, res) => {
+  let connection;
+  try {
+    const { start, stop, seat, cus_id, route_id, trip_id } = req.body;
+
+    connection = await oracledb.getConnection(dbConfig);
+
+    // 1️⃣ หาค่า id ล่าสุด
+    const result = await connection.execute(
+      `SELECT MAX(id) AS max_id FROM RESERVE`,
+      [],
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    let newId = 1; // default ถ้า table ว่าง
+    if (result.rows[0].MAX_ID) {
+      newId = Number(result.rows[0].MAX_ID) + 1;
+    }
+
+    // 2️⃣ Insert ด้วย id ใหม่ (ลบ created_at ออก)
+    await connection.execute(
+      `INSERT INTO RESERVE (id, startt, stopt, status, seat, cus_id, route_id, trip_id)
+       VALUES (:id, :startt, :stopt, '-', :seat, :cus_id, :route_id, :trip_id)`,
+      {
+        id: newId,
+        startt: start,
+        stopt: stop,
+        seat,
+        cus_id,
+        route_id,
+        trip_id,
+      },
+      { autoCommit: true }
+    );
+
+    res.json({ message: "✅ จองเรียบร้อยแล้ว", id: newId });
+  } catch (err) {
+    console.error("❌ POST /rent error:", err);
+    res.status(500).json({ error: "DB Error", details: err.message });
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+
 app.get("/reserve/:cus_id", async (req, res) => {
   let connection;
   try {

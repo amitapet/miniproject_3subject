@@ -16,7 +16,33 @@
   font-size: 22px;
   margin-bottom: 15px;
 }
+/* Pagination */
+.page-container {
+  position: relative;
+}
 
+.pagination {
+  position: absolute;
+  bottom: 0;
+  left: 17vw;
+  width: 80%;
+  text-align: center;
+  padding: 10px 0;
+  background-color: #f9f9f9;
+  font-size: 14px;
+  color: #333;
+  box-shadow: 0 -1px 5px rgba(0, 0, 0, 0.1);
+}
+
+.pagination button {
+  margin: 0 5px;
+  padding: 5px 10px;
+}
+
+.pagination .active-page {
+  background-color: #1b3b6f;
+  color: white;
+}
 /* rantInfo */
 
 .rentinfo-container {
