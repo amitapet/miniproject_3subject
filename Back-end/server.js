@@ -144,6 +144,57 @@ app.post("/login", async (req, res) => {
   }
 });
 
+// API report6
+app.get("/report6", async (req, res) => {
+  const { start, end } = req.query;
+  let connection;
+
+  try {
+    connection = await oracledb.getConnection(dbConfig);
+
+    const result = await connection.execute(
+      `
+      SELECT 
+        e.id AS EMPLOYEE_ID,
+        e.fname || ' ' || e.lname AS EMPLOYEE_NAME,
+        COUNT(sd.id) AS TOTAL,
+        SUM(CASE WHEN TO_NUMBER(REGEXP_SUBSTR(sd.TIME_IN, '^[0-9]+(\.[0-9]+)?')) < 17 THEN 1 ELSE 0 END) AS BEFORE17,
+        SUM(CASE WHEN TO_NUMBER(REGEXP_SUBSTR(sd.TIME_IN, '^[0-9]+(\.[0-9]+)?')) >= 17 THEN 1 ELSE 0 END) AS AFTER17
+      FROM employee e
+      JOIN work w ON w.EMP_ID = e.id AND w.STATUS = 'finished'
+      JOIN trip t ON t.id = w.TRIP_ID
+      JOIN stop_duration sd ON t.id = sd.id_trip
+      WHERE t.date_trip BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') 
+                AND TO_DATE(:endDate, 'YYYY-MM-DD')
+      GROUP BY e.id, e.fname, e.lname
+      ORDER BY TOTAL DESC
+      `,
+      { startDate: start, endDate: end },
+      { outFormat: require("oracledb").OUT_FORMAT_OBJECT }
+    );
+
+    const rows = result.rows;
+    if (rows.length > 0) {
+      const grandTotal = {
+        EMPLOYEE_ID: "",
+        EMPLOYEE_NAME: "รวมทั้งหมด",
+        TOTAL: rows.reduce((sum, r) => sum + (r.TOTAL || 0), 0),
+        BEFORE17: rows.reduce((sum, r) => sum + (r.BEFORE17 || 0), 0),
+        AFTER17: rows.reduce((sum, r) => sum + (r.AFTER17 || 0), 0),
+      };
+      rows.push(grandTotal);
+    }
+    res.json(rows);
+  } catch (err) {
+    console.error("❌ Database Error:", err);
+    res.status(500).json({ error: "Database error: " + err.message });
+  } finally {
+    if (connection) {
+      await connection.close();
+    }
+  }
+});
+
 //=============================ส่วนของ API ข้อมูลสถานี=====================================
 
 app.get("/stations", async (req, res) => {
