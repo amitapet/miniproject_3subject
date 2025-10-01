@@ -99,7 +99,7 @@ function Schedules() {
       fetchTrips();
     } catch (err) {
       console.error("Delete error:", err.response?.data || err.message);
-      alert("ลบไม่สำเร็จ ดู console");
+      alert("ลบไม่สำเร็จเนี่องจากมีการจองอยู่");
     }
   };
 
@@ -115,6 +115,8 @@ function Schedules() {
     );
   });
 
+
+  
 
   //===================ส่วนดึงสถานีเมื่อเลือก route===============
   useEffect(() => {
@@ -183,11 +185,11 @@ function Schedules() {
               <thead>
                 <tr>
                   <th>เส้นทาง</th>
-                  <th>รถ</th>
+                  <th>วันที่</th>
                   <th>คนขับ</th>
                   <th>เวลาออก (นาฬิกา)</th>
                   <th>เวลาเดินทาง (นาที)</th>
-                  <th>วันที่</th>
+                  <th>รถ</th>
                   <th></th>
                 </tr>
               </thead>
@@ -196,11 +198,12 @@ function Schedules() {
                     {filteredTrips.map(trip => (
                       <tr key={trip.TRIP_ID}>
                         <td>{trip.ROUTE?.NAME || "-"}</td>
-                        <td>{trip.CAR ? `${trip.CAR.ID} - ${trip.CAR.TYPE?.NAME || ""}` : "-"}</td>
+                         <td>{trip.DATE_TRIP || "-"}</td>
                         <td>{trip.EMPLOYEE?.NAME || "-"}</td>
                         <td>{trip.TIMEOUT?.toFixed(2) || "-"}</td>
                         <td>{trip.ROUTE?.TOTALSUM_TIME || "-"}</td>
-                        <td>{trip.DATE_TRIP || "-"}</td>
+                       
+                        <td>{trip.CAR ? `${trip.CAR.ID} - ${trip.CAR.TYPE?.NAME || ""}` : "-"}</td>
                         <td>
                           <button className="btn-edit" onClick={() => openEditModal(trip)}>แก้ไข / รายละเอียด</button>
                           <button className="btn-delete" onClick={() => handleDelete(trip.TRIP_ID)}>ลบ</button>
@@ -217,52 +220,111 @@ function Schedules() {
               <div className="modal-box">
                 <h3>{editingTrip ? "แก้ไขรอบเวลา/รายละเอียด" : "เพิ่มรอบเวลา"}</h3>
                 <form onSubmit={handleSubmit}>
+
+
+                    <label>คนขับ</label>
+                        {!form.DATE_TRIP || !form.TIMEOUT || !form.ID_ROUTE ? (
+                          <select disabled>
+                            <option>กรุณาเลือกวันที่, เวลาออก และเส้นทางก่อน</option>
+                          </select>
+                        ) : (
+                          <select
+                            value={form.ID_EMPLOYEE}
+                            onChange={(e) => setForm({ ...form, ID_EMPLOYEE: e.target.value })}
+                            required
+                          >
+                            <option value="">เลือก</option>
+                            {employees
+                              .filter(emp => {
+                                if (emp.POSITION?.NAME !== "Driver") return false;
+
+                                const startTime = Number(form.TIMEOUT);
+                                const routeTime = Number(
+                                  routes.find(r => r.ID === form.ID_ROUTE)?.TOTALSUM_TIME || 0
+                                );
+                                const endTime = startTime + routeTime / 60;
+
+                                return !trips.some(trip => {
+                                  if (
+                                    trip.DATE_TRIP !== form.DATE_TRIP ||
+                                    trip.EMPLOYEE?.ID !== emp.ID ||
+                                    trip.TRIP_ID === editingTrip?.TRIP_ID
+                                  ) return false;
+
+                                  const tripStart = Number(trip.TIMEOUT);
+                                  const tripEnd = tripStart + (Number(trip.ROUTE?.TOTALSUM_TIME || 0) / 60);
+
+                                  return !(endTime <= tripStart || startTime >= tripEnd);
+                                });
+                              })
+                              .map(emp => (
+                                <option key={emp.ID} value={emp.ID}>
+                                  {emp.FNAME} {emp.LNAME}
+                                </option>
+                              ))}
+                          </select>
+                        )}
+
+
+                        <label>รถ</label>
+                            {!form.DATE_TRIP || !form.TIMEOUT ? (
+                              <select disabled>
+                                <option>กรุณาเลือกวันที่และเวลาออกก่อน</option>
+                              </select>
+                            ) : (
+                              <select
+                                value={form.ID_CAR}
+                                onChange={(e) => setForm({ ...form, ID_CAR: e.target.value })}
+                                required
+                              >
+                                <option value="">เลือก</option>
+                                {cars
+                                  .filter(car => {
+                                    const startTime = Number(form.TIMEOUT);
+                                    const routeTime = Number(
+                                      routes.find(r => r.ID === form.ID_ROUTE)?.TOTALSUM_TIME || 0
+                                    );
+                                    const endTime = startTime + routeTime / 60;
+
+                                    return !trips.some(trip => {
+                                      if (
+                                        trip.DATE_TRIP !== form.DATE_TRIP ||
+                                        trip.CAR?.ID !== car.ID ||
+                                        trip.TRIP_ID === editingTrip?.TRIP_ID
+                                      ) return false;
+
+                                      const tripStart = Number(trip.TIMEOUT);
+                                      const tripEnd = tripStart + (Number(trip.ROUTE?.TOTALSUM_TIME || 0) / 60);
+
+                                      return !(endTime <= tripStart || startTime >= tripEnd);
+                                    });
+                                  })
+                                  .map(car => (
+                                    <option key={car.ID} value={car.ID}>
+                                      {car.ID} {car.TYPE_NAME || car.TYPE?.NAME ? ` - ${car.TYPE_NAME || car.TYPE?.NAME}` : ""}
+                                    </option>
+                                  ))}
+                              </select>
+                            )}
+
+
+
+                  
+
                   <label>วันที่</label>
                   <input type="date" value={form.DATE_TRIP} onChange={e => setForm({ ...form, DATE_TRIP: e.target.value })} required />
 
                   <label>เวลาออก</label>
                   <input type="number" value={form.TIMEOUT} onChange={e => setForm({ ...form, TIMEOUT: e.target.value })} required />
 
-                  <label>รถ</label>
-                  <select value={form.ID_CAR} onChange={e => setForm({ ...form, ID_CAR: e.target.value })} required>
-                    <option value="">เลือก</option>
-                    {cars.map(c => <option key={c.ID} value={c.ID}>{c.ID} {c.TYPE_NAME ? ` - ${c.TYPE_NAME}` : (c.TYPE?.NAME ? ` - ${c.TYPE.NAME}` : '')}</option>)}
-                  </select>
+
+
+
+
 
                   
-                      <label>คนขับ</label>
-                      {!form.DATE_TRIP ? (
-                        <select disabled>
-                          <option>กรุณาเลือกวันที่ก่อน</option>
-                        </select>
-                      ) : (
-                        <select
-                          value={form.ID_EMPLOYEE}
-                          onChange={(e) => setForm({ ...form, ID_EMPLOYEE: e.target.value })}
-                          required
-                        >
-                          <option value="">เลือก</option>
-                          {employees
-                            .filter(emp =>
-                              emp.POSITION?.NAME === "Driver" &&
-                              (
-                                !trips.some(trip =>
-                                  trip.EMPLOYEE?.ID === emp.ID &&
-                                  trip.DATE_TRIP === form.DATE_TRIP &&
-                                  trip.TRIP_ID !== editingTrip?.TRIP_ID
-                                )
-                              )
-                            )
-                            .map(emp => (
-                              <option key={emp.ID} value={emp.ID}>
-                                {emp.FNAME} {emp.LNAME}
-                              </option>
-                            ))}
-                        </select>
-                      )}
-
-
-
+                  
+              
                   <label>เส้นทาง</label>
                   <select value={form.ID_ROUTE} onChange={e => setForm({ ...form, ID_ROUTE: e.target.value })} required>
                     <option value="">เลือก</option>
