@@ -1,0 +1,249 @@
+/* แถว dropdown+ปุ่มลบประเภทรถใน modal */
+.delete-type-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.delete-type-dropdown {
+  flex: 1;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #05375a;
+}
+
+/* Wrapper หลัก */
+.cars-wrapper {
+  display: flex;
+  min-height: 90vh;
+  min-width: 150vh;
+  background-color: #ffffff;
+  border-radius: 14px;
+  position: relative;
+}
+
+.cars-content {
+  flex: 1;
+  padding: 20px;
+}
+
+h2 {
+  margin-bottom: 20px;
+  color: #05375a;
+}
+
+/* ตารางรถ */
+.car-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: white;
+}
+
+.car-table th,
+.car-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: center;
+}
+
+.car-table th {
+  background-color: #05375a;
+  color: white;
+}
+
+/* ปุ่มแก้ไข */
+.btn-edit {
+  margin-right: 10px;
+  background-color: #05375a;
+  color: white;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.btn-edit:hover {
+  background-color: #1b4f72;
+}
+
+/* ปุ่มลบ */
+.btn-delete {
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.btn-delete:hover {
+  background-color: #ec6050;
+}
+
+/* แถวบน (ค้นหา + ปุ่มเพิ่ม) */
+.top-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+/* ช่องค้นหา */
+.search-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 300px;
+}
+
+.search-icon {
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  transform: translateY(-50%);
+  color: #888;
+  pointer-events: none;
+}
+
+.car-search {
+  width: 100%;
+  padding: 12px 12px 12px 32px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+}
+
+/* ปุ่มเพิ่มรถ */
+.butn-add {
+  padding: 10px 14px;
+  background: #05375a;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  
+}
+
+.butn-add:hover {
+  background: #094d7b;
+}
+
+/* Modal overlay ครอบทั้งหน้าจอ */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+/* กล่อง modal */
+.modal-box {
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  width: 600px;
+  max-width: 90%;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+}
+
+.modal-box h3 {
+  margin-bottom: 15px;
+}
+
+/* ฟอร์มเพิ่มประเภทรถ */
+.type-form-wrapper {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.type-form-wrapper input {
+  flex: 1;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #05375a;
+}
+
+.type-form-wrapper button {
+  background-color: #05375a;
+  color: white;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.type-form-wrapper button:hover {
+  background-color: #1b4f72;
+}
+
+/* ฟอร์มหลักใน modal */
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.modal-form .input-group {
+  display: flex;
+  gap: 10px;
+}
+
+.modal-form input,
+.modal-form select {
+  flex: 1;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #05375a;
+}
+
+/* ปุ่มใน modal */
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.modal-actions .btn-submit {
+  background-color: #05375a;
+  color: white;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.modal-actions .btn-submit:hover {
+  background-color: #094d7b;
+}
+
+.modal-actions .btn-cancel {
+  background-color: #e74c3c;
+  border: none;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.modal-actions .btn-cancel:hover {
+  background-color: #ec6050;
+}
+
+/* Input style */
+.input-license,
+.input-type,
+.input-seats {
+  width: 100%;
+  border: 2px solid #05375a;
+  padding: 8px;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
