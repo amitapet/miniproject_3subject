@@ -297,7 +297,7 @@ app.get("/assignmentdetail/:tripId", async (req, res) => {
     connection = await oracledb.getConnection(dbConfig);
 
     const result = await connection.execute(
-      `SELECT c.tel,
+      `SELECT r.id,c.tel,
               c.fname,
               c.lname,
               ss.name AS pickup_name,
@@ -311,7 +311,7 @@ app.get("/assignmentdetail/:tripId", async (req, res) => {
        LEFT JOIN Route_stations s ON ss.id = s.STOPS_ID
        LEFT JOIN Route_stations stop ON stops.id = stop.STOPS_ID
        WHERE r.TRIP_ID = :tripId
-       group by c.tel,
+       group by r.id,c.tel,
               c.fname,
               c.lname,
               ss.name,
@@ -565,6 +565,33 @@ app.put("/work/end", async (req, res) => {
   }
 });
 
+app.put("/work/noshow", async (req, res) => {
+  let connection;
+  try {
+    const { reserveId } = req.body;
+    connection = await oracledb.getConnection(dbConfig);
+
+    const result = await connection.execute(
+      `UPDATE RESERVE
+       SET STATUS = 'noshow'
+       WHERE ID = :reserveId`,
+      { reserveId },
+      { autoCommit: true }
+    );
+
+    if (result.rowsAffected === 0) {
+      return res.status(404).json({ error: "ไม่พบงานที่ต้องการเปลี่ยนสถานะ" });
+    }
+
+    res.json({ message: "เปลี่ยนสถานะเป็น Noshow เรียบร้อยแล้ว" });
+  } catch (err) {
+    console.error("❌ PUT /work/noshow error:", err);
+    res.status(500).json({ error: "DB Error", details: err.message });
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+
 //end work
 
 //Result
@@ -625,7 +652,6 @@ app.get("/result/count/:tripId", async (req, res) => {
     if (connection) await connection.close();
   }
 });
-
 
 //end Result
 

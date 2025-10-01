@@ -99,6 +99,25 @@ function Currentjob() {
     }
   };
 
+  const handleNoshow = async (reserveId) => {
+    try {
+      await axios.put("http://localhost:3000/work/noshow", {
+        reserveId: reserveId,
+      });
+
+      alert("🚫 ยกเลิกผู้โดยสารเรียบร้อยแล้ว");
+
+      // ✅ รีโหลดรายชื่อผู้โดยสารใหม่
+      const resPassengers = await axios.get(
+        `http://localhost:3000/assignmentdetail/${tripId}`
+      );
+      setPassengers(resPassengers.data);
+    } catch (err) {
+      console.error("❌ Noshow error:", err);
+      alert("ไม่สามารถยกเลิกผู้โดยสารได้");
+    }
+  };
+
   const handleScanResult = async (result) => {
     if (!result) return;
 
@@ -142,7 +161,11 @@ function Currentjob() {
     );
   });
   const bookedSeats = passengers
-    .filter((p) => p.STATUS?.toLowerCase() !== "cancel")
+    .filter(
+      (p) =>
+        p.STATUS.toLowerCase() !== "cancel" &&
+        p.STATUS.toLowerCase() !== "noshow"
+    )
     .reduce((total, p) => total + Number(p.SEAT || 0), 0);
 
   const availableSeats = schedule ? schedule.SEAT - bookedSeats : 0;
@@ -246,6 +269,7 @@ function Currentjob() {
           <table className="passenger-table">
             <thead>
               <tr>
+                <th>ไอดี</th>
                 <th>ลำดับ</th>
                 <th>เบอร์โทรศัพท์</th>
                 <th>ชื่อ</th>
@@ -258,6 +282,7 @@ function Currentjob() {
             <tbody>
               {filteredPassengers.map((p, i) => (
                 <tr key={i}>
+                  <td>{p.ID}</td>
                   <td>{i + 1}</td>
                   <td>{p.TEL}</td>
                   <td>
@@ -266,7 +291,19 @@ function Currentjob() {
                   <td>{p.PICKUP_NAME}</td>
                   <td>{p.DROPOFF_NAME}</td>
                   <td>{p.SEAT}</td>
-                  <td>{p.STATUS}</td>
+                  <td>
+                    {p.STATUS}{" "}
+                    <div>
+                      {p.STATUS === "-" && (
+                        <button
+                          className="btn-cancel"
+                          onClick={() => handleNoshow(p.ID)}
+                        >
+                          ไม่มา
+                        </button>
+                      )}
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -275,8 +312,11 @@ function Currentjob() {
           {/* ปุ่มจบงาน */}
           {tripId && (
             <div className="job-buttons">
-              <button className="btn-end" onClick={() => setShowEndModal(true)} 
-              disabled={passengers.some(p => !p.STATUS || p.STATUS === "-")}>
+              <button
+                className="btn-end"
+                onClick={() => setShowEndModal(true)}
+                disabled={passengers.some((p) => !p.STATUS || p.STATUS === "-")}
+              >
                 จบงาน
               </button>
             </div>
