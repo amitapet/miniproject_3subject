@@ -1629,7 +1629,7 @@ app.get("/report1", async (req, res) => {
 
 // API report6
 app.get("/report6", async (req, res) => {
-  const { start, end } = req.query;
+  const { start, end } = req.query; // React ส่ง ?start=2025-09-13&end=2025-09-30
   let connection;
 
   try {
@@ -1637,25 +1637,25 @@ app.get("/report6", async (req, res) => {
 
     const result = await connection.execute(
       `
-      SELECT 
-        e.id AS EMPLOYEE_ID,
-        e.fname || ' ' || e.lname AS EMPLOYEE_NAME,
-        COUNT(sd.id) AS TOTAL,
-        SUM(CASE WHEN TO_NUMBER(REGEXP_SUBSTR(sd.TIME_IN, '^[0-9]+(\.[0-9]+)?')) < 17 THEN 1 ELSE 0 END) AS BEFORE17,
-        SUM(CASE WHEN TO_NUMBER(REGEXP_SUBSTR(sd.TIME_IN, '^[0-9]+(\.[0-9]+)?')) >= 17 THEN 1 ELSE 0 END) AS AFTER17
-      FROM employee e
-      JOIN work w ON w.EMP_ID = e.id AND w.STATUS = 'finished'
-      JOIN trip t ON t.id = w.TRIP_ID
-      JOIN stop_duration sd ON t.id = sd.id_trip
-      WHERE t.date_trip BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') 
-                AND TO_DATE(:endDate, 'YYYY-MM-DD')
-      GROUP BY e.id, e.fname, e.lname
-      ORDER BY TOTAL DESC
+     SELECT 
+  e.id AS EMPLOYEE_ID,
+  e.fname || ' ' || e.lname AS EMPLOYEE_NAME,
+  COUNT(t.id) AS TOTAL,
+  SUM(CASE WHEN t.TIMEOUT < 17 THEN 1 ELSE 0 END) AS BEFORE17,
+  SUM(CASE WHEN t.TIMEOUT >= 17 THEN 1 ELSE 0 END) AS AFTER17
+FROM employee e
+JOIN work w ON w.EMP_ID = e.id AND w.STATUS = 'finished'
+JOIN trip t ON t.id = w.TRIP_ID
+WHERE t.date_trip BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') 
+          AND TO_DATE(:endDate, 'YYYY-MM-DD')
+GROUP BY e.id, e.fname, e.lname
+ORDER BY TOTAL DESC
       `,
       { startDate: start, endDate: end },
       { outFormat: require("oracledb").OUT_FORMAT_OBJECT }
     );
 
+    // คำนวณ Grand Total
     const rows = result.rows;
     if (rows.length > 0) {
       const grandTotal = {
