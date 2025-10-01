@@ -1041,10 +1041,21 @@ app.put("/carroutes/:id", async (req, res) => {
   if (!nameRoute || nameRoute.trim() === "") {
     return res.status(400).json({ error: "Route name is required" });
   }
+  const binds = stations.map((s) => ({
+    routeId: id,
+    stopsId: Number(s.stops_id),
+    stationTime: Number(s.station_time),
+    seqNo: Number(s.seq_no),
+  }));
+
 
   let connection;
   try {
     connection = await oracledb.getConnection(dbConfig);
+
+    console.log("stations payload:", stations);
+    console.log("binds before insert:", binds);
+
 
     // อัพเดต ROUTE
     const result = await connection.execute(
@@ -1092,9 +1103,7 @@ app.put("/carroutes/:id", async (req, res) => {
     res.json({ message: "Route and stations updated successfully!" });
   } catch (err) {
     console.error("PUT /carroutes/:id error:", err);
-    res
-      .status(500)
-      .json({ error: "Database update failed", details: err.message });
+    res.status(500).json({ error: "Database update failed", details: err.message });
   } finally {
     if (connection) {
       try {
@@ -1335,29 +1344,29 @@ app.get("/TRIP", async (req, res) => {
           TIMEOUT: row.TIMEOUT,
           CAR: row.CAR_ID
             ? {
-                ID: row.CAR_ID,
-                SEAT: row.SEAT,
-                TYPE: row.TYPECAR_ID
-                  ? { ID: row.TYPECAR_ID, NAME: row.TYPECAR_NAME }
-                  : null,
-              }
+              ID: row.CAR_ID,
+              SEAT: row.SEAT,
+              TYPE: row.TYPECAR_ID
+                ? { ID: row.TYPECAR_ID, NAME: row.TYPECAR_NAME }
+                : null,
+            }
             : null,
           EMPLOYEE: row.EMPLOYEE_ID
             ? {
-                ID: row.EMPLOYEE_ID,
-                NAME: row.EMPLOYEE_NAME,
-                POSITION: row.POSITION_ID
-                  ? { ID: row.POSITION_ID, NAME: row.POSITION_NAME }
-                  : null,
-              }
+              ID: row.EMPLOYEE_ID,
+              NAME: row.EMPLOYEE_NAME,
+              POSITION: row.POSITION_ID
+                ? { ID: row.POSITION_ID, NAME: row.POSITION_NAME }
+                : null,
+            }
             : null,
           ROUTE: row.ROUTE_ID
             ? {
-                ID: row.ROUTE_ID,
-                NAME: row.NAME_ROUTE,
-                TOTALSUM_TIME: row.TOTALSUM_TIME,
-                STATIONS: [],
-              }
+              ID: row.ROUTE_ID,
+              NAME: row.NAME_ROUTE,
+              TOTALSUM_TIME: row.TOTALSUM_TIME,
+              STATIONS: [],
+            }
             : null,
         };
         acc.push(trip);
@@ -1545,7 +1554,7 @@ app.get("/report1", async (req, res) => {
         SELECT
           EXTRACT(MONTH FROM t.DATE_TRIP) AS month_num,
           s_in.name AS station_name,
-          COUNT(*) AS passenger_in,
+          SUM(r.SEAT) AS passenger_in,
           0        AS passenger_out
         FROM RESERVE r
         JOIN TRIP t ON r.TRIP_ID = t.ID
@@ -1578,7 +1587,7 @@ app.get("/report1", async (req, res) => {
           EXTRACT(MONTH FROM t.DATE_TRIP) AS month_num,
           s_out.name AS station_name,
           0        AS passenger_in,
-          COUNT(*) AS passenger_out
+          SUM(r.SEAT) AS passenger_out
         FROM RESERVE r
         JOIN TRIP t ON r.TRIP_ID = t.ID
         JOIN STATION s_out ON r.STOPT = s_out.ID
@@ -1605,11 +1614,11 @@ app.get("/report1", async (req, res) => {
     const result = await connection.execute(sql, binds);
 
     // แปลงผลลัพธ์ให้อยู่ในรูปแบบที่ต้องการ
-    const rows = result.rows.map((r) => ({
-      MONTH: r[0], // เดือน (1–12)
-      STATION_NAME: r[1], // ชื่อสถานี
-      PASSENGER_IN: r[2], // จำนวนขึ้น
-      PASSENGER_OUT: r[3], // จำนวนลง
+    const rows = result.rows.map(r => ({
+      MONTH: r[0],          // เดือน (1–12)
+      STATION_NAME: r[1],   // ชื่อสถานี
+      PASSENGER_IN: r[2],   // จำนวนขึ้น
+      PASSENGER_OUT: r[3],  // จำนวนลง
     }));
 
     res.json(rows);
@@ -1627,7 +1636,15 @@ app.get("/report1", async (req, res) => {
   }
 });
 
-// API report6
+// 404 handler
+app.use((req, res) => {
+  console.log(`404: ${req.method} ${req.url} not found`);
+  res
+    .status(404)
+    .json({ error: `Endpoint ${req.method} ${req.url} not found` });
+});
+
+//=================================ส่วนของ API รายงาน 6 ====================================
 app.get("/report6", async (req, res) => {
   const { start, end } = req.query;
   let connection;
