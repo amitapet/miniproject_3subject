@@ -8,6 +8,7 @@
 }
 
 .table {
+    background: rgb(202, 234, 255);
     margin-top: 20px;
     border-collapse: collapse;
     width: 100%;

@@ -1041,10 +1041,19 @@ app.put("/carroutes/:id", async (req, res) => {
   if (!nameRoute || nameRoute.trim() === "") {
     return res.status(400).json({ error: "Route name is required" });
   }
+  const binds = stations.map((s) => ({
+    routeId: id,
+    stopsId: Number(s.stops_id),
+    stationTime: Number(s.station_time),
+    seqNo: Number(s.seq_no),
+  }));
 
   let connection;
   try {
     connection = await oracledb.getConnection(dbConfig);
+
+    console.log("stations payload:", stations);
+    console.log("binds before insert:", binds);
 
     // อัพเดต ROUTE
     const result = await connection.execute(
@@ -1545,7 +1554,7 @@ app.get("/report1", async (req, res) => {
         SELECT
           EXTRACT(MONTH FROM t.DATE_TRIP) AS month_num,
           s_in.name AS station_name,
-          COUNT(*) AS passenger_in,
+          SUM(r.SEAT) AS passenger_in,
           0        AS passenger_out
         FROM RESERVE r
         JOIN TRIP t ON r.TRIP_ID = t.ID
@@ -1578,7 +1587,7 @@ app.get("/report1", async (req, res) => {
           EXTRACT(MONTH FROM t.DATE_TRIP) AS month_num,
           s_out.name AS station_name,
           0        AS passenger_in,
-          COUNT(*) AS passenger_out
+          SUM(r.SEAT) AS passenger_out
         FROM RESERVE r
         JOIN TRIP t ON r.TRIP_ID = t.ID
         JOIN STATION s_out ON r.STOPT = s_out.ID
@@ -1629,7 +1638,7 @@ app.get("/report1", async (req, res) => {
 
 // API report6
 app.get("/report6", async (req, res) => {
-  const { start, end } = req.query; // React ส่ง ?start=2025-09-13&end=2025-09-30
+  const { start, end } = req.query;
   let connection;
 
   try {
@@ -1637,25 +1646,25 @@ app.get("/report6", async (req, res) => {
 
     const result = await connection.execute(
       `
-     SELECT 
-  e.id AS EMPLOYEE_ID,
-  e.fname || ' ' || e.lname AS EMPLOYEE_NAME,
-  COUNT(t.id) AS TOTAL,
-  SUM(CASE WHEN t.TIMEOUT < 17 THEN 1 ELSE 0 END) AS BEFORE17,
-  SUM(CASE WHEN t.TIMEOUT >= 17 THEN 1 ELSE 0 END) AS AFTER17
-FROM employee e
-JOIN work w ON w.EMP_ID = e.id AND w.STATUS = 'finished'
-JOIN trip t ON t.id = w.TRIP_ID
-WHERE t.date_trip BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') 
-          AND TO_DATE(:endDate, 'YYYY-MM-DD')
-GROUP BY e.id, e.fname, e.lname
-ORDER BY TOTAL DESC
+      SELECT 
+        e.id AS EMPLOYEE_ID,
+        e.fname || ' ' || e.lname AS EMPLOYEE_NAME,
+        COUNT(sd.id) AS TOTAL,
+        SUM(CASE WHEN TO_NUMBER(REGEXP_SUBSTR(sd.TIME_IN, '^[0-9]+(\.[0-9]+)?')) < 17 THEN 1 ELSE 0 END) AS BEFORE17,
+        SUM(CASE WHEN TO_NUMBER(REGEXP_SUBSTR(sd.TIME_IN, '^[0-9]+(\.[0-9]+)?')) >= 17 THEN 1 ELSE 0 END) AS AFTER17
+      FROM employee e
+      JOIN work w ON w.EMP_ID = e.id AND w.STATUS = 'finished'
+      JOIN trip t ON t.id = w.TRIP_ID
+      JOIN stop_duration sd ON t.id = sd.id_trip
+      WHERE t.date_trip BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') 
+                AND TO_DATE(:endDate, 'YYYY-MM-DD')
+      GROUP BY e.id, e.fname, e.lname
+      ORDER BY TOTAL DESC
       `,
       { startDate: start, endDate: end },
       { outFormat: require("oracledb").OUT_FORMAT_OBJECT }
     );
 
-    // คำนวณ Grand Total
     const rows = result.rows;
     if (rows.length > 0) {
       const grandTotal = {
@@ -1669,15 +1678,11 @@ ORDER BY TOTAL DESC
     }
     res.json(rows);
   } catch (err) {
-    console.error("Error in /report6:", err);
-    res.status(500).json({ error: err.message });
+    console.error("❌ Database Error:", err);
+    res.status(500).json({ error: "Database error: " + err.message });
   } finally {
     if (connection) {
-      try {
-        await connection.close();
-      } catch (err) {
-        console.error("Error closing connection:", err);
-      }
+      await connection.close();
     }
   }
 });

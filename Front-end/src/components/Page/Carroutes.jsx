@@ -117,8 +117,8 @@ function CarRoutes() {
                 nameRoute: form.NAME_ROUTE,
                 totalTime: form.TOTALSUM_TIME || 0,
                 stations: form.selectedStations.map((s, idx) => ({
-                    stops_id: s.stationId,
-                    station_time: s.time,
+                    stops_id: Number(s.stationId),
+                    station_time: Number(s.time),
                     seq_no: idx + 1,
                 }))
             };
@@ -137,10 +137,16 @@ function CarRoutes() {
             Swal.fire("สำเร็จ", "บันทึกข้อมูลเรียบร้อยแล้ว!", "success");
         } catch (error) {
             console.error("Error details:", error.response?.data || error.message);
-            Swal.fire("ผิดพลาด", "เกิดข้อผิดพลาดในการบันทึก ใส่จุดอย่างน้อย 1 จุด", "error");
+
+            if (error.response?.status === 400) {
+                Swal.fire("ผิดพลาด", error.response.data.error, "error");
+            } else if (error.response?.status === 404) {
+                Swal.fire("ผิดพลาด", "ไม่พบเส้นทางนี้ในระบบ", "error");
+            } else {
+                Swal.fire("ผิดพลาด", "เกิดข้อผิดพลาดจากเซิร์ฟเวอร์", "error");
+            }
         }
     };
-
 
     // ปุ่มลบเส้นทาง
     const handleDelete = async (id) => {
