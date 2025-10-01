@@ -5,34 +5,50 @@ import Sidebar from "../Sidebar";
 import "./Driver.css";
 
 function Resultdetail() {
-  const { tripId } = useParams(); // ดึง tripId จาก URL
+  const { tripId } = useParams();
   const [tripInfo, setTripInfo] = useState(null);
+  const [stops, setStops] = useState([]); // stops จาก DB
   const [loading, setLoading] = useState(true);
-
-  console.log("trip = ",tripId);
-
-  // mock stops (ตรงนี้คุณอาจทำ API แยกเหมือนกันได้)
-  const stops = [
-    { id: 1, name: "ตลาดนิน", time: "09:32 น.", up: 3, down: 0 },
-    { id: 2, name: "สะพาน", time: "09:36 น.", up: 0, down: 0 },
-    { id: 3, name: "โลตัส", time: "09:43 น.", up: 0, down: 0 },
-    { id: 4, name: "ปตท.", time: "09:48 น.", up: 1, down: 0 },
-    { id: 5, name: "kfc", time: "09:51 น.", up: 0, down: 0 },
-    { id: 6, name: "แยกหนองจอก", time: "09:55 น.", up: 6, down: 0 },
-    { id: 7, name: "7-11", time: "10:00 น.", up: 0, down: 0 },
-    { id: 8, name: "สำนักสิช", time: "10:10 น.", up: 0, down: 0 },
-    { id: 9, name: "สะพานยอดฮิต", time: "10:20 น.", up: 0, down: 0 },
-    { id: 10, name: "บางกอกอารีนา", time: "10:25 น.", up: 0, down: 1 },
-  ];
 
   useEffect(() => {
     const fetchTripDetail = async () => {
       try {
+        // 1. ดึง trip detail
         const res = await axios.get(
           `http://localhost:3000/workdetail/${tripId}`
         );
         if (res.data && res.data.length > 0) {
-          setTripInfo(res.data[0]); // API return เป็น array
+          const trip = res.data[0];
+          setTripInfo(trip);
+
+          // 2. ดึง stops ของ route
+          const Rid = trip.ROUTEID;
+          if (Rid || Rid === 0) {
+            const stopRes = await axios.get(
+              `http://localhost:3000/result/${Rid}`
+            );
+            const stopsData = stopRes.data || [];
+
+            // 3. ดึงจำนวนขึ้นลงต่อจุด
+            const boardingRes = await axios.get(
+              `http://localhost:3000/result/count/${tripId}`
+            );
+            const boardingData = boardingRes.data;
+
+            // 4. merge ข้อมูล
+            const mergedStops = stopsData.map((stop) => {
+              const board = boardingData.find(
+                (b) => b.STATION_NAME === stop.NAME
+              );
+              return {
+                ...stop,
+                boarding: board ? board.BOARDING : 0,
+                alighting: board ? board.ALIGHTING : 0,
+              };
+            });
+
+            setStops(mergedStops);
+          }
         }
       } catch (err) {
         console.error("❌ Error fetching trip detail:", err);
@@ -65,6 +81,23 @@ function Resultdetail() {
       </>
     );
   }
+  function calculateArrivalTimes(timeoutHour, stationTimes) {
+    const arrivalTimes = [];
+    let totalMinutes = timeoutHour * 60; // เวลาเริ่มต้นเป็นนาที
+    for (let i = 0; i < stationTimes.length; i++) {
+      totalMinutes += stationTimes[i]; // บวกสะสม
+      const h = Math.floor(totalMinutes / 60) % 24;
+      const m = totalMinutes % 60;
+      arrivalTimes.push(
+        `${String(h).padStart(2, "0")}.${String(m).padStart(2, "0")}`
+      );
+    }
+    return arrivalTimes;
+  }
+  const arrivalTimes = calculateArrivalTimes(
+    tripInfo.TIMEOUT,
+    stops.map((s) => s.STATION_TIME)
+  );
 
   return (
     <>
@@ -103,24 +136,17 @@ function Resultdetail() {
               </tr>
             </thead>
             <tbody>
-              {stops.map((stop) => (
-                <tr key={stop.id}>
-                  <td>{stop.id}</td>
-                  <td>{stop.name}</td>
-                  <td>{stop.time}</td>
-                  <td>{stop.up} คน</td>
-                  <td>{stop.down} คน</td>
+              {stops.map((stop, index) => (
+                <tr key={index}>
+                  <td>{index + 1}</td>
+                  <td>{stop.NAME}</td>
+                  <td>{arrivalTimes[index]}</td>
+                  <td>{stop.boarding}</td>
+                  <td>{stop.alighting}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </div>
-
-        {/* Pagination */}
-        <div className="pagination">
-          <button>{"<"}</button>
-          <span>1/2 หน้า</span>
-          <button>{">"}</button>
         </div>
       </div>
     </>

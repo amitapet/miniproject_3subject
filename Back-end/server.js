@@ -301,23 +301,21 @@ app.get("/assignmentdetail/:tripId", async (req, res) => {
               c.fname,
               c.lname,
               ss.name AS pickup_name,
-              sstops.name AS dropoff_name,
+              stops.name AS dropoff_name,
               r.seat,
               r.status , count(r.id)
        FROM RESERVE r
        LEFT JOIN CUSTOMER c ON r.CUS_ID = c.id
-       LEFT JOIN station sd ON r.startt = sd.id
-       LEFT JOIN station stopd ON r.stopt = stopd.id
-       LEFT JOIN Route_stations s ON sd.id = s.STOPS_ID
-       LEFT JOIN Route_stations stop ON stopd.id = stop.STOPS_ID
-       LEFT JOIN STATION ss ON s.stops_id = ss.ID
-       LEFT JOIN STATION sstops ON stop.stops_id = sstops.ID
+       LEFT JOIN station ss ON r.startt = ss.id
+       LEFT JOIN station stops ON r.stopt = stops.id
+       LEFT JOIN Route_stations s ON ss.id = s.STOPS_ID
+       LEFT JOIN Route_stations stop ON stops.id = stop.STOPS_ID
        WHERE r.TRIP_ID = :tripId
        group by c.tel,
               c.fname,
               c.lname,
               ss.name,
-              sstops.name,
+              stops.name,
               r.seat,
               r.status`,
       { tripId },
@@ -344,7 +342,7 @@ app.get("/workdetail/:tripId", async (req, res) => {
     connection = await oracledb.getConnection(dbConfig);
 
     const result = await connection.execute(
-      `SELECT r.name_route, 
+      `SELECT r.name_route, r.id AS routeId,
         t.id, to_char(t.date_trip,'dd/mm/yyyy') as tripDate, 
         t.timeout, t.id_car, car.SEAT,
         t.id_employee, ty.name, 
@@ -354,7 +352,7 @@ app.get("/workdetail/:tripId", async (req, res) => {
       LEFT JOIN car ON t.id_car = car.id
       LEFT JOIN type_car ty ON car.id_typecar = ty.id
       WHERE t.id = :tripId
-      GROUP BY r.name_route, t.id, t.date_trip, t.timeout, 
+      GROUP BY r.name_route, r.id, t.id, t.date_trip, t.timeout, 
         t.id_car, car.SEAT, t.id_employee, ty.name
       ORDER BY t.id`,
       { tripId }, // bind parameter
@@ -568,6 +566,68 @@ app.put("/work/end", async (req, res) => {
 });
 
 //end work
+
+//Result
+
+app.get("/result/:routeId", async (req, res) => {
+  let connection;
+  try {
+    const routeId = req.params.routeId;
+
+    connection = await oracledb.getConnection(dbConfig);
+
+    const result = await connection.execute(
+      `SELECT r.id , r.name_route,
+        s.name , rs.STATION_TIME
+        from ROUTE_STATIONS rs
+        left join route r on r.ID = rs.ID_ROUTE
+        left join station s on rs.STOPS_ID = s.ID
+        where rs.ID_ROUTE = :routeId
+        order by rs.id`,
+      { routeId }, // bind parameter
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error("❌ GET /result/:routeId error:", err);
+    res.status(500).json({ error: "DB Error", details: err.message });
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+
+app.get("/result/count/:tripId", async (req, res) => {
+  let connection;
+  try {
+    const tripId = req.params.tripId;
+
+    connection = await oracledb.getConnection(dbConfig);
+
+    // ดึงข้อมูลจำนวนขึ้น/ลงต่อสถานี
+    const result = await connection.execute(
+      `SELECT s.name AS station_name,
+              SUM(CASE WHEN r.startt = s.id THEN 1 ELSE 0 END) AS boarding,
+              SUM(CASE WHEN r.stopt = s.id THEN 1 ELSE 0 END) AS alighting
+       FROM station s
+       LEFT JOIN RESERVE r ON r.TRIP_ID = :tripId
+       GROUP BY s.name, s.id
+       ORDER BY s.id`,
+      { tripId },
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error("❌ GET /result/count/:tripId error:", err);
+    res.status(500).json({ error: "DB Error", details: err.message });
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+
+
+//end Result
 
 //ส่วนของ API เพิ่ม ลบ แก้ไข ข้อมูลสถานี
 
