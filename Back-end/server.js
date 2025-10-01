@@ -1636,6 +1636,59 @@ app.get("/report1", async (req, res) => {
   }
 });
 
+// Report 3
+// ========================================
+app.get("/reports/report3", async (req, res) => {
+  const { start_date, end_date } = req.query;
+
+  if (!start_date || !end_date) {
+    return res.status(400).json({ error: "กรุณาระบุวันเริ่มต้นและวันสิ้นสุด" });
+  }
+
+  let connection;
+
+  try {
+    connection = await oracledb.getConnection(dbConfig);
+
+    const sql = `
+      SELECT 
+        c.fname || ' ' || c.lname AS USERNAME,
+        COUNT(r.id) AS TOTAL_RESERVES,
+        COUNT(CASE WHEN r.status = 'getin' THEN 1 END) AS RIDES_ACTUAL,
+        COUNT(CASE WHEN r.status = 'cancel' THEN 1 END) AS CANCELLED,
+        COUNT(CASE WHEN r.status = '-' THEN 1 END) AS NO_SHOW
+      FROM customer c
+      LEFT JOIN reserve r 
+        ON r.cus_id = c.id
+       AND r.reserve_date BETWEEN TO_DATE(:start_date, 'YYYY-MM-DD') 
+                               AND TO_DATE(:end_date, 'YYYY-MM-DD')
+      GROUP BY c.fname, c.lname
+    `;
+
+    const result = await connection.execute(sql, {
+      start_date,
+      end_date,
+    });
+
+    res.json(
+      result.rows.map((row) => ({
+        USERNAME: row[0],
+        TOTAL_RESERVES: row[1],
+        RIDES_ACTUAL: row[2],
+        CANCELLED: row[3],
+        NO_SHOW: row[4],
+      }))
+    );
+  } catch (err) {
+    console.error("❌ Database Error:", err);
+    res.status(500).json({ error: "Database error: " + err.message });
+  } finally {
+    if (connection) {
+      await connection.close();
+    }
+  }
+});
+
 // 404 handler
 app.use((req, res) => {
   console.log(`404: ${req.method} ${req.url} not found`);
