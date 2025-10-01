@@ -1629,7 +1629,7 @@ app.get("/report1", async (req, res) => {
 
 // API report6
 app.get("/report6", async (req, res) => {
-  const { start, end } = req.query; // React ส่ง ?start=2025-09-13&end=2025-09-30
+  const { start, end } = req.query;
   let connection;
 
   try {
@@ -1641,8 +1641,8 @@ app.get("/report6", async (req, res) => {
         e.id AS EMPLOYEE_ID,
         e.fname || ' ' || e.lname AS EMPLOYEE_NAME,
         COUNT(sd.id) AS TOTAL,
-        SUM(CASE WHEN sd.TIME_IN < 17 THEN 1 ELSE 0 END) AS BEFORE17,
-        SUM(CASE WHEN sd.TIME_IN >= 17 THEN 1 ELSE 0 END) AS AFTER17
+        SUM(CASE WHEN TO_NUMBER(REGEXP_SUBSTR(sd.TIME_IN, '^[0-9]+(\.[0-9]+)?')) < 17 THEN 1 ELSE 0 END) AS BEFORE17,
+        SUM(CASE WHEN TO_NUMBER(REGEXP_SUBSTR(sd.TIME_IN, '^[0-9]+(\.[0-9]+)?')) >= 17 THEN 1 ELSE 0 END) AS AFTER17
       FROM employee e
       JOIN work w ON w.EMP_ID = e.id AND w.STATUS = 'finished'
       JOIN trip t ON t.id = w.TRIP_ID
@@ -1656,7 +1656,6 @@ app.get("/report6", async (req, res) => {
       { outFormat: require("oracledb").OUT_FORMAT_OBJECT }
     );
 
-    // คำนวณ Grand Total
     const rows = result.rows;
     if (rows.length > 0) {
       const grandTotal = {
