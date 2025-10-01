@@ -8,8 +8,6 @@ const PORT = 3000;
 app.use(cors());
 app.use(express.json());
 
-
-
 // ========================Load Thick mode============================
 const clientLibDir =
   process.platform === "win32"
@@ -145,7 +143,6 @@ app.post("/login", async (req, res) => {
     if (connection) await connection.close();
   }
 });
-
 
 //=============================ส่วนของ API ข้อมูลสถานี=====================================
 
@@ -365,21 +362,23 @@ app.get("/POSITION", async (req, res) => {
   }
 });
 
-
 // เพิ่ม POSITION (สร้าง PERMISSION ไปพร้อมกัน)
 app.post("/POSITION", async (req, res) => {
   const { NAME, permissions } = req.body;
-
 
   let connection;
   try {
     connection = await oracledb.getConnection();
 
     // หา id ใหม่สำหรับ PERMISSION
-    const resultPer = await connection.execute(`SELECT MAX(ID) FROM PERMISSION`);
+    const resultPer = await connection.execute(
+      `SELECT MAX(ID) FROM PERMISSION`
+    );
     let newPerId = "001";
     if (resultPer.rows[0][0]) {
-      newPerId = (parseInt(resultPer.rows[0][0]) + 1).toString().padStart(3, "0");
+      newPerId = (parseInt(resultPer.rows[0][0]) + 1)
+        .toString()
+        .padStart(3, "0");
     }
 
     // Insert PERMISSION
@@ -403,7 +402,9 @@ app.post("/POSITION", async (req, res) => {
     const resultPos = await connection.execute(`SELECT MAX(ID) FROM POSITION`);
     let newPosId = "001";
     if (resultPos.rows[0][0]) {
-      newPosId = (parseInt(resultPos.rows[0][0]) + 1).toString().padStart(3, "0");
+      newPosId = (parseInt(resultPos.rows[0][0]) + 1)
+        .toString()
+        .padStart(3, "0");
     }
 
     // Insert POSITION พร้อมเชื่อมกับ PERMISSION
@@ -413,7 +414,11 @@ app.post("/POSITION", async (req, res) => {
       { autoCommit: true }
     );
 
-    res.json({ message: "POSITION inserted successfully!", ID: newPosId, PERMISSION_ID: newPerId });
+    res.json({
+      message: "POSITION inserted successfully!",
+      ID: newPosId,
+      PERMISSION_ID: newPerId,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).send("DB Insert Error");
@@ -467,7 +472,6 @@ app.put("/POSITION/:id", async (req, res) => {
 
     await connection.commit();
     res.json({ message: "POSITION and PERMISSION updated successfully!" });
-
   } catch (err) {
     console.error(err);
     res.status(500).send("DB Update Error");
@@ -475,7 +479,6 @@ app.put("/POSITION/:id", async (req, res) => {
     if (connection) await connection.close();
   }
 });
-
 
 // ลบ POSITION พร้อมลบ PERMISSION
 app.delete("/POSITION/:id", async (req, res) => {
@@ -493,22 +496,19 @@ app.delete("/POSITION/:id", async (req, res) => {
     const permissionId = result.rows[0] ? result.rows[0][0] : null;
 
     // ลบตำแหน่ง
-    await connection.execute(
-      `DELETE FROM POSITION WHERE ID = :ID`,
-      { ID: id }
-    );
+    await connection.execute(`DELETE FROM POSITION WHERE ID = :ID`, { ID: id });
 
     // ลบสิทธิ์ถ้ามี
     if (permissionId) {
-      await connection.execute(
-        `DELETE FROM PERMISSION WHERE ID = :ID`,
-        { ID: permissionId }
-      );
+      await connection.execute(`DELETE FROM PERMISSION WHERE ID = :ID`, {
+        ID: permissionId,
+      });
     }
 
     await connection.commit();
-    res.json({ message: "POSITION and associated PERMISSION deleted successfully!" });
-
+    res.json({
+      message: "POSITION and associated PERMISSION deleted successfully!",
+    });
   } catch (err) {
     console.error(err);
     res.status(500).send("DB Delete Error");
@@ -517,19 +517,15 @@ app.delete("/POSITION/:id", async (req, res) => {
   }
 });
 
-
-
 //================================ส่วนของ API ตำแหน่งสำหรับพนักงาน======================================
 app.get("/POSITION/simple", async (req, res) => {
   let connection;
   try {
     connection = await oracledb.getConnection();
-    const result = await connection.execute(
-      `SELECT ID, NAME FROM POSITION`
-    );
-    const positions = result.rows.map(row => ({
+    const result = await connection.execute(`SELECT ID, NAME FROM POSITION`);
+    const positions = result.rows.map((row) => ({
       ID: row[0],
-      NAME: row[1]
+      NAME: row[1],
     }));
     res.json(positions);
   } catch (err) {
@@ -539,7 +535,6 @@ app.get("/POSITION/simple", async (req, res) => {
     if (connection) await connection.close();
   }
 });
-
 
 //================================ส่วนของ API แผนก================================================
 // ดึงข้อมูล DEPARTMENT
@@ -554,7 +549,7 @@ app.get("/DEPARTMENT", async (req, res) => {
     );
     const DEPARTMENT = result.rows.map((row) => ({
       ID: row[0],
-      NAME: row[1]
+      NAME: row[1],
     }));
     res.json(DEPARTMENT);
   } catch (err) {
@@ -632,8 +627,6 @@ app.delete("/DEPARTMENT/:id", async (req, res) => {
   }
 });
 
-
-
 //=================================ส่วนของ API พนักงาน========================================
 // ดึงข้อมูลพนักงาน
 app.get("/Employee", async (req, res) => {
@@ -668,12 +661,10 @@ app.get("/Employee", async (req, res) => {
       id_department: row[6],
       id_position: row[7],
       DEPARTMENT_NAME: row[8], // สำหรับตารางแสดงผล
-      POSITION_NAME: row[9],   // สำหรับตารางแสดงผล
+      POSITION_NAME: row[9], // สำหรับตารางแสดงผล
       DEPARTMENT: row[8] ? { ID: row[6], NAME: row[8] } : null, // สำหรับ combobox
-      POSITION: row[9] ? { ID: row[7], NAME: row[9] } : null     // สำหรับ combobox
+      POSITION: row[9] ? { ID: row[7], NAME: row[9] } : null, // สำหรับ combobox
     }));
-
-
 
     res.json(Employee);
   } catch (err) {
@@ -876,7 +867,6 @@ app.get("/carroutes", async (req, res) => {
     }
   }
 });
-
 
 // เพิ่มเส้นทางรถ
 app.post("/carroutes", async (req, res) => {
@@ -1102,7 +1092,9 @@ app.put("/carroutes/:id", async (req, res) => {
     res.json({ message: "Route and stations updated successfully!" });
   } catch (err) {
     console.error("PUT /carroutes/:id error:", err);
-    res.status(500).json({ error: "Database update failed", details: err.message });
+    res
+      .status(500)
+      .json({ error: "Database update failed", details: err.message });
   } finally {
     if (connection) {
       try {
@@ -1113,7 +1105,6 @@ app.put("/carroutes/:id", async (req, res) => {
     }
   }
 });
-
 
 // ลบเส้นทางรถ
 app.delete("/carroutes/:id", async (req, res) => {
@@ -1145,7 +1136,6 @@ app.delete("/carroutes/:id", async (req, res) => {
     }
   }
 });
-
 
 // ====================================== API ประเภทรถ ==================================================
 // ดึงข้อมูลประเภทรถทั้งหมด
@@ -1303,7 +1293,6 @@ app.delete("/CARS/:id", async (req, res) => {
   }
 });
 
-
 // =========================== ส่วนของ API TRIP =============================
 
 // ---------- GET TRIP ทั้งหมด (คืน DATE_TRIP เป็น 'YYYY-MM-DD' string เพื่อเลี่ยง timezone) ----------
@@ -1332,33 +1321,44 @@ app.get("/TRIP", async (req, res) => {
         LEFT JOIN ROUTE_STATIONS rs ON r.ID = rs.ID_ROUTE
         LEFT JOIN STATION s ON rs.STOPS_ID = s.ID
        ORDER BY t.ID, rs.SEQ_NO`,
-      [], { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      [],
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
 
     // Build JSON same as before (DATE_TRIP now is string 'YYYY-MM-DD')
     const trips = result.rows.reduce((acc, row) => {
-      let trip = acc.find(t => t.TRIP_ID === row.TRIP_ID);
+      let trip = acc.find((t) => t.TRIP_ID === row.TRIP_ID);
       if (!trip) {
         trip = {
           TRIP_ID: row.TRIP_ID,
           DATE_TRIP: row.DATE_TRIP,
           TIMEOUT: row.TIMEOUT,
-          CAR: row.CAR_ID ? {
-            ID: row.CAR_ID,
-            SEAT: row.SEAT,
-            TYPE: row.TYPECAR_ID ? { ID: row.TYPECAR_ID, NAME: row.TYPECAR_NAME } : null
-          } : null,
-          EMPLOYEE: row.EMPLOYEE_ID ? {
-            ID: row.EMPLOYEE_ID,
-            NAME: row.EMPLOYEE_NAME,
-            POSITION: row.POSITION_ID ? { ID: row.POSITION_ID, NAME: row.POSITION_NAME } : null
-          } : null,
-          ROUTE: row.ROUTE_ID ? {
-            ID: row.ROUTE_ID,
-            NAME: row.NAME_ROUTE,
-            TOTALSUM_TIME: row.TOTALSUM_TIME,
-            STATIONS: []
-          } : null
+          CAR: row.CAR_ID
+            ? {
+                ID: row.CAR_ID,
+                SEAT: row.SEAT,
+                TYPE: row.TYPECAR_ID
+                  ? { ID: row.TYPECAR_ID, NAME: row.TYPECAR_NAME }
+                  : null,
+              }
+            : null,
+          EMPLOYEE: row.EMPLOYEE_ID
+            ? {
+                ID: row.EMPLOYEE_ID,
+                NAME: row.EMPLOYEE_NAME,
+                POSITION: row.POSITION_ID
+                  ? { ID: row.POSITION_ID, NAME: row.POSITION_NAME }
+                  : null,
+              }
+            : null,
+          ROUTE: row.ROUTE_ID
+            ? {
+                ID: row.ROUTE_ID,
+                NAME: row.NAME_ROUTE,
+                TOTALSUM_TIME: row.TOTALSUM_TIME,
+                STATIONS: [],
+              }
+            : null,
         };
         acc.push(trip);
       }
@@ -1369,14 +1369,13 @@ app.get("/TRIP", async (req, res) => {
           STATION_ID: row.STATION_ID,
           STATION_NAME: row.STATION_NAME,
           STATION_TIME: row.STATION_TIME,
-          SEQ_NO: row.SEQ_NO
+          SEQ_NO: row.SEQ_NO,
         });
       }
       return acc;
     }, []);
 
     res.json(trips);
-
   } catch (err) {
     console.error("GET /TRIP error:", err);
     res.status(500).json({ error: "DB Error", details: err.message });
@@ -1399,7 +1398,8 @@ app.get("/TRIP/:id", async (req, res) => {
       [id],
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
-    if (result.rows.length === 0) return res.status(404).json({ error: "TRIP not found" });
+    if (result.rows.length === 0)
+      return res.status(404).json({ error: "TRIP not found" });
     res.json(result.rows[0]);
   } catch (err) {
     console.error("GET /TRIP/:id error:", err);
@@ -1425,11 +1425,13 @@ app.post("/TRIP", async (req, res) => {
         ID_CAR,
         ID_EMPLOYEE,
         ID_ROUTE,
-        ID: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER }
+        ID: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
       },
       { autoCommit: true }
     );
-    res.status(201).json({ message: "TRIP created", TRIP_ID: result.outBinds.ID[0] });
+    res
+      .status(201)
+      .json({ message: "TRIP created", TRIP_ID: result.outBinds.ID[0] });
   } catch (err) {
     console.error("POST /TRIP error:", err);
     res.status(500).json({ error: "DB Error", details: err.message });
@@ -1437,7 +1439,6 @@ app.post("/TRIP", async (req, res) => {
     if (connection) await connection.close();
   }
 });
-
 
 // ---------- PUT TRIP (แก้ไข) ----------
 app.put("/TRIP/:id", async (req, res) => {
@@ -1456,7 +1457,8 @@ app.put("/TRIP/:id", async (req, res) => {
       { DATE_TRIP, TIMEOUT, ID_CAR, ID_EMPLOYEE, ID_ROUTE, ID: id },
       { autoCommit: true }
     );
-    if (result.rowsAffected === 0) return res.status(404).json({ error: "TRIP not found" });
+    if (result.rowsAffected === 0)
+      return res.status(404).json({ error: "TRIP not found" });
     res.json({ message: "TRIP updated" });
   } catch (err) {
     console.error("PUT /TRIP/:id error:", err);
@@ -1465,7 +1467,6 @@ app.put("/TRIP/:id", async (req, res) => {
     if (connection) await connection.close();
   }
 });
-
 
 // ----- DELETE TRIP -----
 app.delete("/TRIP/:id", async (req, res) => {
@@ -1490,7 +1491,6 @@ app.delete("/TRIP/:id", async (req, res) => {
   }
 });
 
-
 //=================================ส่วนของ API แสดงตารางสถานี======================================
 // GET route_stations by route ID
 
@@ -1498,7 +1498,7 @@ app.get("/trip/route_stations/:id", async (req, res) => {
   let connection;
   try {
     const routeId = req.params.id;
-    connection = await oracledb.getConnection(dbConfig); 
+    connection = await oracledb.getConnection(dbConfig);
 
     const result = await connection.execute(
       `SELECT 
@@ -1528,8 +1528,6 @@ app.get("/trip/route_stations/:id", async (req, res) => {
     }
   }
 });
-
-
 
 //=================================ส่วนของ API รายงาน1======================================
 app.get("/report1", async (req, res) => {
@@ -1607,11 +1605,11 @@ app.get("/report1", async (req, res) => {
     const result = await connection.execute(sql, binds);
 
     // แปลงผลลัพธ์ให้อยู่ในรูปแบบที่ต้องการ
-    const rows = result.rows.map(r => ({
-      MONTH: r[0],          // เดือน (1–12)
-      STATION_NAME: r[1],   // ชื่อสถานี
-      PASSENGER_IN: r[2],   // จำนวนขึ้น
-      PASSENGER_OUT: r[3],  // จำนวนลง
+    const rows = result.rows.map((r) => ({
+      MONTH: r[0], // เดือน (1–12)
+      STATION_NAME: r[1], // ชื่อสถานี
+      PASSENGER_IN: r[2], // จำนวนขึ้น
+      PASSENGER_OUT: r[3], // จำนวนลง
     }));
 
     res.json(rows);
@@ -1629,7 +1627,61 @@ app.get("/report1", async (req, res) => {
   }
 });
 
+// API report6
+app.get("/report6", async (req, res) => {
+  const { start, end } = req.query; // React ส่ง ?start=2025-09-13&end=2025-09-30
+  let connection;
 
+  try {
+    connection = await oracledb.getConnection(dbConfig);
+
+    const result = await connection.execute(
+      `
+      SELECT 
+        e.id AS EMPLOYEE_ID,
+        e.fname || ' ' || e.lname AS EMPLOYEE_NAME,
+        COUNT(sd.id) AS TOTAL,
+        SUM(CASE WHEN sd.TIME_IN < 17 THEN 1 ELSE 0 END) AS BEFORE17,
+        SUM(CASE WHEN sd.TIME_IN >= 17 THEN 1 ELSE 0 END) AS AFTER17
+      FROM employee e
+      JOIN work w ON w.EMP_ID = e.id AND w.STATUS = 'finished'
+      JOIN trip t ON t.id = w.TRIP_ID
+      JOIN stop_duration sd ON t.id = sd.id_trip
+      WHERE t.date_trip BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') 
+                AND TO_DATE(:endDate, 'YYYY-MM-DD')
+      GROUP BY e.id, e.fname, e.lname
+      ORDER BY TOTAL DESC
+      `,
+      { startDate: start, endDate: end },
+      { outFormat: require("oracledb").OUT_FORMAT_OBJECT }
+    );
+
+    // คำนวณ Grand Total
+    const rows = result.rows;
+    if (rows.length > 0) {
+      const grandTotal = {
+        EMPLOYEE_ID: "",
+        EMPLOYEE_NAME: "รวมทั้งหมด",
+        TOTAL: rows.reduce((sum, r) => sum + (r.TOTAL || 0), 0),
+        BEFORE17: rows.reduce((sum, r) => sum + (r.BEFORE17 || 0), 0),
+        AFTER17: rows.reduce((sum, r) => sum + (r.AFTER17 || 0), 0),
+      };
+      rows.push(grandTotal);
+    }
+    res.json(rows);
+  } catch (err) {
+    console.error("Error in /report6:", err);
+    res.status(500).json({ error: err.message });
+  } finally {
+    if (connection) {
+      try {
+        await connection.close();
+      } catch (err) {
+        console.error("Error closing connection:", err);
+      }
+    }
+  }
+});
 
 // 404 handler
 app.use((req, res) => {
