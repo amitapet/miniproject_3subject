@@ -8,8 +8,6 @@ const PORT = 3000;
 app.use(cors());
 app.use(express.json());
 
-
-
 // ========================Load Thick mode============================
 const clientLibDir =
   process.platform === "win32"
@@ -145,7 +143,6 @@ app.post("/login", async (req, res) => {
     if (connection) await connection.close();
   }
 });
-
 
 //=============================ส่วนของ API ข้อมูลสถานี=====================================
 
@@ -365,21 +362,23 @@ app.get("/POSITION", async (req, res) => {
   }
 });
 
-
 // เพิ่ม POSITION (สร้าง PERMISSION ไปพร้อมกัน)
 app.post("/POSITION", async (req, res) => {
   const { NAME, permissions } = req.body;
-
 
   let connection;
   try {
     connection = await oracledb.getConnection();
 
     // หา id ใหม่สำหรับ PERMISSION
-    const resultPer = await connection.execute(`SELECT MAX(ID) FROM PERMISSION`);
+    const resultPer = await connection.execute(
+      `SELECT MAX(ID) FROM PERMISSION`
+    );
     let newPerId = "001";
     if (resultPer.rows[0][0]) {
-      newPerId = (parseInt(resultPer.rows[0][0]) + 1).toString().padStart(3, "0");
+      newPerId = (parseInt(resultPer.rows[0][0]) + 1)
+        .toString()
+        .padStart(3, "0");
     }
 
     // Insert PERMISSION
@@ -403,7 +402,9 @@ app.post("/POSITION", async (req, res) => {
     const resultPos = await connection.execute(`SELECT MAX(ID) FROM POSITION`);
     let newPosId = "001";
     if (resultPos.rows[0][0]) {
-      newPosId = (parseInt(resultPos.rows[0][0]) + 1).toString().padStart(3, "0");
+      newPosId = (parseInt(resultPos.rows[0][0]) + 1)
+        .toString()
+        .padStart(3, "0");
     }
 
     // Insert POSITION พร้อมเชื่อมกับ PERMISSION
@@ -413,7 +414,11 @@ app.post("/POSITION", async (req, res) => {
       { autoCommit: true }
     );
 
-    res.json({ message: "POSITION inserted successfully!", ID: newPosId, PERMISSION_ID: newPerId });
+    res.json({
+      message: "POSITION inserted successfully!",
+      ID: newPosId,
+      PERMISSION_ID: newPerId,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).send("DB Insert Error");
@@ -466,7 +471,6 @@ app.put("/POSITION/:id", async (req, res) => {
 
     await connection.commit();
     res.json({ message: "POSITION and PERMISSION updated successfully!" });
-
   } catch (err) {
     console.error(err);
     res.status(500).send("DB Update Error");
@@ -474,7 +478,6 @@ app.put("/POSITION/:id", async (req, res) => {
     if (connection) await connection.close();
   }
 });
-
 
 // ลบ POSITION พร้อมลบ PERMISSION
 app.delete("/POSITION/:id", async (req, res) => {
@@ -492,22 +495,19 @@ app.delete("/POSITION/:id", async (req, res) => {
     const permissionId = result.rows[0] ? result.rows[0][0] : null;
 
     // ลบตำแหน่ง
-    await connection.execute(
-      `DELETE FROM POSITION WHERE ID = :ID`,
-      { ID: id }
-    );
+    await connection.execute(`DELETE FROM POSITION WHERE ID = :ID`, { ID: id });
 
     // ลบสิทธิ์ถ้ามี
     if (permissionId) {
-      await connection.execute(
-        `DELETE FROM PERMISSION WHERE ID = :ID`,
-        { ID: permissionId }
-      );
+      await connection.execute(`DELETE FROM PERMISSION WHERE ID = :ID`, {
+        ID: permissionId,
+      });
     }
 
     await connection.commit();
-    res.json({ message: "POSITION and associated PERMISSION deleted successfully!" });
-
+    res.json({
+      message: "POSITION and associated PERMISSION deleted successfully!",
+    });
   } catch (err) {
     console.error(err);
     res.status(500).send("DB Delete Error");
@@ -516,19 +516,15 @@ app.delete("/POSITION/:id", async (req, res) => {
   }
 });
 
-
-
 //================================ส่วนของ API ตำแหน่งสำหรับพนักงาน======================================
 app.get("/POSITION/simple", async (req, res) => {
   let connection;
   try {
     connection = await oracledb.getConnection();
-    const result = await connection.execute(
-      `SELECT ID, NAME FROM POSITION`
-    );
-    const positions = result.rows.map(row => ({
+    const result = await connection.execute(`SELECT ID, NAME FROM POSITION`);
+    const positions = result.rows.map((row) => ({
       ID: row[0],
-      NAME: row[1]
+      NAME: row[1],
     }));
     res.json(positions);
   } catch (err) {
@@ -538,7 +534,6 @@ app.get("/POSITION/simple", async (req, res) => {
     if (connection) await connection.close();
   }
 });
-
 
 //================================ส่วนของ API แผนก================================================
 // ดึงข้อมูล DEPARTMENT
@@ -553,7 +548,7 @@ app.get("/DEPARTMENT", async (req, res) => {
     );
     const DEPARTMENT = result.rows.map((row) => ({
       ID: row[0],
-      NAME: row[1]
+      NAME: row[1],
     }));
     res.json(DEPARTMENT);
   } catch (err) {
@@ -631,8 +626,6 @@ app.delete("/DEPARTMENT/:id", async (req, res) => {
   }
 });
 
-
-
 //=================================ส่วนของ API พนักงาน========================================
 // ดึงข้อมูลพนักงาน
 app.get("/Employee", async (req, res) => {
@@ -668,7 +661,6 @@ app.get("/Employee", async (req, res) => {
       id_position: row[7],
       DEPARTMENT_NAME: row[8],
       POSITION_NAME: row[9],
-
     }));
 
     res.json(Employee);
@@ -834,6 +826,7 @@ app.get("/stations", async (req, res) => {
     if (connection) {
       try {
         await connection.close();
+        console.log("🔌 Database connection closed");
       } catch (closeErr) {
         console.error("Connection close error:", closeErr);
       }
@@ -866,13 +859,13 @@ app.get("/carroutes", async (req, res) => {
     if (connection) {
       try {
         await connection.close();
+        console.log("🔌 Database connection closed");
       } catch (closeErr) {
         console.error("Connection close error:", closeErr);
       }
     }
   }
 });
-
 
 // เพิ่มเส้นทางรถ
 app.post("/carroutes", async (req, res) => {
@@ -998,6 +991,7 @@ app.get("/carroutes/:id", async (req, res) => {
     if (connection) {
       try {
         await connection.close();
+        console.log("🔌 Database connection closed");
       } catch (closeErr) {
         console.error("Connection close error:", closeErr);
       }
@@ -1033,6 +1027,7 @@ app.get("/route_stations/:id", async (req, res) => {
     if (connection) {
       try {
         await connection.close();
+        console.log("🔌 Database connection closed");
       } catch (closeErr) {
         console.error("Connection close error:", closeErr);
       }
@@ -1099,18 +1094,20 @@ app.put("/carroutes/:id", async (req, res) => {
     res.json({ message: "Route and stations updated successfully!" });
   } catch (err) {
     console.error("❌ PUT /carroutes/:id error:", err);
-    res.status(500).json({ error: "Database update failed", details: err.message });
+    res
+      .status(500)
+      .json({ error: "Database update failed", details: err.message });
   } finally {
     if (connection) {
       try {
         await connection.close();
+        console.log("🔌 Database connection closed");
       } catch (closeErr) {
         console.error("Connection close error:", closeErr);
       }
     }
   }
 });
-
 
 // ลบเส้นทางรถ
 app.delete("/carroutes/:id", async (req, res) => {
@@ -1136,13 +1133,13 @@ app.delete("/carroutes/:id", async (req, res) => {
     if (connection) {
       try {
         await connection.close();
+        console.log("🔌 Database connection closed");
       } catch (closeErr) {
         console.error("Connection close error:", closeErr);
       }
     }
   }
 });
-
 
 // ====================================== API ประเภทรถ ==================================================
 // ดึงข้อมูลประเภทรถทั้งหมด
@@ -1300,6 +1297,61 @@ app.delete("/CARS/:id", async (req, res) => {
   }
 });
 
+// API report6
+app.get("/report6", async (req, res) => {
+  const { start, end } = req.query; // React ส่ง ?start=2025-09-13&end=2025-09-30
+  let connection;
+
+  try {
+    connection = await oracledb.getConnection(dbConfig);
+
+    const result = await connection.execute(
+      `
+     SELECT 
+  e.id AS EMPLOYEE_ID,
+  e.fname || ' ' || e.lname AS EMPLOYEE_NAME,
+  COUNT(t.id) AS TOTAL,
+  SUM(CASE WHEN t.TIMEOUT < 17 THEN 1 ELSE 0 END) AS BEFORE17,
+  SUM(CASE WHEN t.TIMEOUT >= 17 THEN 1 ELSE 0 END) AS AFTER17
+FROM employee e
+JOIN work w ON w.EMP_ID = e.id AND w.STATUS = 'finished'
+JOIN trip t ON t.id = w.TRIP_ID
+WHERE t.date_trip BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') 
+          AND TO_DATE(:endDate, 'YYYY-MM-DD')
+GROUP BY e.id, e.fname, e.lname
+ORDER BY TOTAL DESC
+      `,
+      { startDate: start, endDate: end },
+      { outFormat: require("oracledb").OUT_FORMAT_OBJECT }
+    );
+
+    // คำนวณ Grand Total
+    const rows = result.rows;
+    if (rows.length > 0) {
+      const grandTotal = {
+        EMPLOYEE_ID: "",
+        EMPLOYEE_NAME: "รวมทั้งหมด",
+        TOTAL: rows.reduce((sum, r) => sum + (r.TOTAL || 0), 0),
+        BEFORE17: rows.reduce((sum, r) => sum + (r.BEFORE17 || 0), 0),
+        AFTER17: rows.reduce((sum, r) => sum + (r.AFTER17 || 0), 0),
+      };
+      rows.push(grandTotal);
+    }
+    res.json(rows);
+  } catch (err) {
+    console.error("Error in /report6:", err);
+    res.status(500).json({ error: err.message });
+  } finally {
+    if (connection) {
+      try {
+        await connection.close();
+      } catch (err) {
+        console.error("Error closing connection:", err);
+      }
+    }
+  }
+});
+
 // Error handler
 app.use((err, req, res, next) => {
   console.error("🔥 Unhandled error:", err);
@@ -1357,11 +1409,11 @@ app.get("/report1", async (req, res) => {
     const result = await connection.execute(sql, binds);
 
     // ✅ แปลงผลลัพธ์ให้อ่านง่าย
-    const rows = result.rows.map(r => ({
+    const rows = result.rows.map((r) => ({
       MONTH: r[0],
       STATION: r[1],
       UP: r[2],
-      DOWN: r[3]
+      DOWN: r[3],
     }));
 
     res.json(rows);
