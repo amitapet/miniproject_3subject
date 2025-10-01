@@ -144,7 +144,7 @@ app.post("/login", async (req, res) => {
   }
 });
 
-// API report6
+//Report 6
 app.get("/report6", async (req, res) => {
   const { start, end } = req.query;
   let connection;
@@ -157,17 +157,16 @@ app.get("/report6", async (req, res) => {
       SELECT 
         e.id AS EMPLOYEE_ID,
         e.fname || ' ' || e.lname AS EMPLOYEE_NAME,
-        COUNT(sd.id) AS TOTAL,
-        SUM(CASE WHEN TO_NUMBER(REGEXP_SUBSTR(sd.TIME_IN, '^[0-9]+(\.[0-9]+)?')) < 17 THEN 1 ELSE 0 END) AS BEFORE17,
-        SUM(CASE WHEN TO_NUMBER(REGEXP_SUBSTR(sd.TIME_IN, '^[0-9]+(\.[0-9]+)?')) >= 17 THEN 1 ELSE 0 END) AS AFTER17
+        COUNT(t.id) AS TOTAL,
+        SUM(CASE WHEN TO_NUMBER(REGEXP_SUBSTR(t.TIMEOUT, '^[0-9]+(\.[0-9]+)?')) < 17 THEN 1 ELSE 0 END) AS BEFORE17,
+        SUM(CASE WHEN TO_NUMBER(REGEXP_SUBSTR(t.TIMEOUT, '^[0-9]+(\.[0-9]+)?')) >= 17 THEN 1 ELSE 0 END) AS AFTER17
       FROM employee e
       JOIN work w ON w.EMP_ID = e.id AND w.STATUS = 'finished'
       JOIN trip t ON t.id = w.TRIP_ID
-      JOIN stop_duration sd ON t.id = sd.id_trip
       WHERE t.date_trip BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') 
                 AND TO_DATE(:endDate, 'YYYY-MM-DD')
       GROUP BY e.id, e.fname, e.lname
-      ORDER BY TOTAL DESC
+      ORDER BY e.id
       `,
       { startDate: start, endDate: end },
       { outFormat: require("oracledb").OUT_FORMAT_OBJECT }
@@ -186,11 +185,15 @@ app.get("/report6", async (req, res) => {
     }
     res.json(rows);
   } catch (err) {
-    console.error("❌ Database Error:", err);
-    res.status(500).json({ error: "Database error: " + err.message });
+    console.error("Error in /report6:", err);
+    res.status(500).json({ error: err.message });
   } finally {
     if (connection) {
-      await connection.close();
+      try {
+        await connection.close();
+      } catch (err) {
+        console.error("Error closing connection:", err);
+      }
     }
   }
 });
