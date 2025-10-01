@@ -61,17 +61,21 @@ function WorkDetail() {
   }, [id, empId]);
 
   const handleGetWork = async () => {
+    //
     try {
-      await axios.put("http://localhost:3000/work/get", {
+      await axios.post("http://localhost:3000/work", {
         emp_id: empId,
         trip_id: id,
       });
       alert("✅ รับงานเรียบร้อยแล้ว");
       setShowModal(false);
-      navigate("/assignment");
     } catch (err) {
-      console.error("❌ End work error:", err);
-      alert("ไม่สามารถรับงานได้");
+      console.error("❌ Start work error:", err);
+      if (err.response?.status === 400) {
+        alert(err.response.data.error);
+      } else {
+        alert("ไม่สามารถรับงานได้");
+      }
     }
   };
 

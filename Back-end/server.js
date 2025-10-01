@@ -220,31 +220,31 @@ app.post("/reserve/cancel/:id", async (req, res) => {
 }); //CANCEL RESERVE
 
 // GET assignments
-app.get("/assignment", async (req, res) => {
+app.get("/assignment/get/:empId", async (req, res) => {
   let connection;
   try {
+    const empId = req.params.empId;
     connection = await oracledb.getConnection(dbConfig);
     const result = await connection.execute(
       `SELECT r.name_route, 
         t.id, to_char(t.date_trip,'dd/mm/yyyy') as tripDate, 
         t.timeout, t.id_car, 
         t.id_employee, ty.name, 
-        COUNT(t.id) AS trip_count
+        w.status
       FROM trip t
+      LEFT JOIN work w ON t.id = w.trip_id
       LEFT JOIN route r ON t.id_route = r.id
       LEFT JOIN car ON t.id_car = car.id
       LEFT JOIN type_car ty ON car.id_typecar = ty.id
-      WHERE t.id_employee IS NULL
-      GROUP BY r.name_route, t.id, t.date_trip, t.timeout, 
-        t.id_car, t.id_employee, ty.name
+      WHERE w.status = 'get' and t.ID_EMPLOYEE = :empId
       ORDER BY t.id`,
-      {}, // bind parameter
+      { empId }, // bind parameter
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
 
     res.json(result.rows);
   } catch (err) {
-    console.error("❌ GET /assignment error:", err);
+    console.error("❌ GET /assignment/get/:empId error:", err);
     res.status(500).json({ error: "DB Error", details: err.message });
   } finally {
     if (connection) await connection.close();
@@ -302,16 +302,23 @@ app.get("/assignmentdetail/:tripId", async (req, res) => {
               ss.name AS pickup_name,
               sstops.name AS dropoff_name,
               r.seat,
-              r.status
+              r.status , count(r.id)
        FROM RESERVE r
        LEFT JOIN CUSTOMER c ON r.CUS_ID = c.id
-       LEFT JOIN STOP_DURATION sd ON r.startt = sd.id
-       LEFT JOIN STOP_DURATION stopd ON r.stopt = stopd.id
-       LEFT JOIN Route_stations s ON sd.id_stops = s.id
-       LEFT JOIN Route_stations stop ON stopd.id_stops = stop.id
+       LEFT JOIN station sd ON r.startt = sd.id
+       LEFT JOIN station stopd ON r.stopt = stopd.id
+       LEFT JOIN Route_stations s ON sd.id = s.STOPS_ID
+       LEFT JOIN Route_stations stop ON stopd.id = stop.STOPS_ID
        LEFT JOIN STATION ss ON s.stops_id = ss.ID
        LEFT JOIN STATION sstops ON stop.stops_id = sstops.ID
-       WHERE r.TRIP_ID = :tripId`,
+       WHERE r.TRIP_ID = :tripId
+       group by c.tel,
+              c.fname,
+              c.lname,
+              ss.name,
+              sstops.name,
+              r.seat,
+              r.status`,
       { tripId },
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
@@ -464,7 +471,7 @@ app.post("/work", async (req, res) => {
 
     // ถ้ายังไม่มี → insert
     await connection.execute(
-      `INSERT INTO work (emp_id, trip_id , status) VALUES (:emp_id, :trip_id,'doing')`,
+      `INSERT INTO work (emp_id, trip_id , status) VALUES (:emp_id, :trip_id,'get')`,
       { emp_id, trip_id },
       { autoCommit: true }
     );
@@ -512,9 +519,9 @@ app.put("/work/get", async (req, res) => {
     connection = await oracledb.getConnection(dbConfig);
 
     const result = await connection.execute(
-      `UPDATE trip 
-       SET id_employee = :emp_id
-       WHERE id = :trip_id`,
+      `UPDATE work 
+       SET status = 'doing'
+       WHERE trip_id = :trip_id and emp_id = :emp_id`,
       { emp_id, trip_id },
       { autoCommit: true }
     );

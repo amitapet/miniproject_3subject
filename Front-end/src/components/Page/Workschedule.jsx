@@ -36,7 +36,7 @@ function Workschedule() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await axios.get(`http://localhost:3000/assignment`);
+        const res = await axios.get(`http://localhost:3000/assignment/${empId}`);
         setSchedules(res.data);
 
         // สร้าง option lists แบบ unique

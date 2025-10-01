@@ -50,9 +50,7 @@ function AssignmentDetail() {
 
     const fetchSchedule = async () => {
       try {
-        const res = await axios.get(
-          `http://localhost:3000/assignment/${empId}`
-        );
+        const res = await axios.get(`http://localhost:3000/workdetail/${id}`);
         const trip = res.data.find((t) => String(t.ID) === String(id));
         setSchedule(trip);
       } catch (err) {
@@ -83,19 +81,16 @@ function AssignmentDetail() {
 
   const handleConfirm = async () => {
     try {
-      await axios.post("http://localhost:3000/work", {
+      await axios.put("http://localhost:3000/work/get", {
         emp_id: empId,
         trip_id: id,
       });
       alert("✅ เริ่มงานเรียบร้อยแล้ว");
       setShowModal(false);
+      navigate("/assignment");
     } catch (err) {
-      console.error("❌ Start work error:", err);
-      if (err.response?.status === 400) {
-        alert(err.response.data.error);
-      } else {
-        alert("ไม่สามารถเริ่มงานได้");
-      }
+      console.error("❌ End work error:", err);
+      alert("ไม่สามารถเริ่มงานได้");
     }
   };
 

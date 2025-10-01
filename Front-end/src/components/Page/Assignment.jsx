@@ -37,7 +37,7 @@ function Assignment() {
     const fetchData = async () => {
       try {
         const res = await axios.get(
-          `http://localhost:3000/assignment/${empId}`
+          `http://localhost:3000/assignment/get/${empId}`
         );
         setSchedules(res.data);
 
