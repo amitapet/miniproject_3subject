@@ -7,7 +7,7 @@ import "./Driver.css";
 function Resultdetail() {
   const { tripId } = useParams();
   const [tripInfo, setTripInfo] = useState(null);
-  const [stops, setStops] = useState([]); // stops จาก DB
+  const [stops, setStops] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -29,21 +29,37 @@ function Resultdetail() {
             );
             const stopsData = stopRes.data || [];
 
-            // 3. ดึงจำนวนขึ้นลงต่อจุด
+            // 3. ดึง reserve (จำนวนขึ้น/ลง)
             const boardingRes = await axios.get(
               `http://localhost:3000/result/count/${tripId}`
             );
-            const boardingData = boardingRes.data;
 
-            // 4. merge ข้อมูล
+            // ใช้ object เก็บจำนวนขึ้น/ลงโดยอิงจากชื่อสถานี
+            const boardingData = {};
+            boardingRes.data.forEach((row) => {
+              if (row.STATUS === "getin") {
+                // คนขึ้นที่ NAME
+                if (!boardingData[row.NAME])
+                  boardingData[row.NAME] = { boarding: 0, alighting: 0 };
+                boardingData[row.NAME].boarding += row.SEAT;
+
+                // คนลงที่ NAME_1
+                if (!boardingData[row.NAME_1])
+                  boardingData[row.NAME_1] = { boarding: 0, alighting: 0 };
+                boardingData[row.NAME_1].alighting += row.SEAT;
+              }
+            });
+
+            // 4. merge ข้อมูลกับ stops
             const mergedStops = stopsData.map((stop) => {
-              const board = boardingData.find(
-                (b) => b.STATION_NAME === stop.NAME
-              );
+              const board = boardingData[stop.NAME] || {
+                boarding: 0,
+                alighting: 0,
+              };
               return {
                 ...stop,
-                boarding: board ? board.BOARDING : 0,
-                alighting: board ? board.ALIGHTING : 0,
+                boarding: board.boarding,
+                alighting: board.alighting,
               };
             });
 
@@ -81,11 +97,13 @@ function Resultdetail() {
       </>
     );
   }
+
+  // ฟังก์ชันคำนวณเวลาถึง
   function calculateArrivalTimes(timeoutHour, stationTimes) {
     const arrivalTimes = [];
-    let totalMinutes = timeoutHour * 60; // เวลาเริ่มต้นเป็นนาที
+    let totalMinutes = timeoutHour * 60;
     for (let i = 0; i < stationTimes.length; i++) {
-      totalMinutes += stationTimes[i]; // บวกสะสม
+      totalMinutes += stationTimes[i];
       const h = Math.floor(totalMinutes / 60) % 24;
       const m = totalMinutes % 60;
       arrivalTimes.push(
@@ -94,6 +112,7 @@ function Resultdetail() {
     }
     return arrivalTimes;
   }
+
   const arrivalTimes = calculateArrivalTimes(
     tripInfo.TIMEOUT,
     stops.map((s) => s.STATION_TIME)

@@ -633,13 +633,12 @@ app.get("/result/count/:tripId", async (req, res) => {
 
     // ดึงข้อมูลจำนวนขึ้น/ลงต่อสถานี
     const result = await connection.execute(
-      `SELECT s.name AS station_name,
-              SUM(CASE WHEN r.startt = s.id THEN 1 ELSE 0 END) AS boarding,
-              SUM(CASE WHEN r.stopt = s.id THEN 1 ELSE 0 END) AS alighting
-       FROM station s
-       LEFT JOIN RESERVE r ON r.TRIP_ID = :tripId
-       GROUP BY s.name, s.id
-       ORDER BY s.id`,
+      `select t.id , s.name , ss.name , re.seat , re.STATUS
+        from RESERVE re
+        left join trip t on re.TRIP_ID = t.id
+        left join station s on re.startt = s.id
+        left join station ss on re.stopt = ss.id
+        where t.id = :tripId`,
       { tripId },
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
