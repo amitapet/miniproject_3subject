@@ -5,7 +5,7 @@ import Sidebar from "../Sidebar";
 import { FaSearch } from "react-icons/fa";
 import "./Driver.css";
 
-function Assignment() {
+function Result() {
   const user = JSON.parse(localStorage.getItem("user"));
   const empId = user?.id || {}; // E0002
   const navigate = useNavigate();
@@ -37,7 +37,7 @@ function Assignment() {
     const fetchData = async () => {
       try {
         const res = await axios.get(
-          `http://localhost:3000/assignment/get/${empId}/get`
+          `http://localhost:3000/assignment/get/${empId}/finished`
         );
         setSchedules(res.data);
 
@@ -169,9 +169,9 @@ function Assignment() {
               </div>
               <button
                 className="detail-btn"
-                onClick={() => navigate(`/assignment/${s.ID}`)}
+                onClick={() => navigate(`/resultdetail/${s.ID}`)}
               >
-                รายละเอียด
+                ผลสรุป
               </button>
             </div>
           ))}
@@ -208,4 +208,4 @@ function Assignment() {
   );
 }
 
-export default Assignment;
+export default Result;

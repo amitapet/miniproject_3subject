@@ -220,10 +220,11 @@ app.post("/reserve/cancel/:id", async (req, res) => {
 }); //CANCEL RESERVE
 
 // GET assignments
-app.get("/assignment/get/:empId", async (req, res) => {
+app.get("/assignment/get/:empId/:status", async (req, res) => {
   let connection;
   try {
     const empId = req.params.empId;
+    const status = req.params.status;
     connection = await oracledb.getConnection(dbConfig);
     const result = await connection.execute(
       `SELECT r.name_route, 
@@ -236,15 +237,15 @@ app.get("/assignment/get/:empId", async (req, res) => {
       LEFT JOIN route r ON t.id_route = r.id
       LEFT JOIN car ON t.id_car = car.id
       LEFT JOIN type_car ty ON car.id_typecar = ty.id
-      WHERE w.status = 'get' and t.ID_EMPLOYEE = :empId
+      WHERE w.status = :status and t.ID_EMPLOYEE = :empId
       ORDER BY t.id`,
-      { empId }, // bind parameter
+      { empId, status }, // bind parameter
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
 
     res.json(result.rows);
   } catch (err) {
-    console.error("❌ GET /assignment/get/:empId error:", err);
+    console.error("❌ GET /assignment/get/:empId/:status error:", err);
     res.status(500).json({ error: "DB Error", details: err.message });
   } finally {
     if (connection) await connection.close();

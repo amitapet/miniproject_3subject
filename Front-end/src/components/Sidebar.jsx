@@ -138,6 +138,14 @@ function Sidebar() {
           </li>
         )}
 
+        {permission.CURRENTJOB === 1 && (
+          <li>
+            <a href="/result">
+              <FaCar /> สรุปเส้นทาง
+            </a>
+          </li>
+        )}
+
         {userid.substring(0, 1) == "C" && (
           <li>
             <a href="/Rent">

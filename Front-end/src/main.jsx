@@ -22,6 +22,8 @@ import Workschedule from "./components/Page/Workschedule";
 import WorkDetail from "./components/Page/WorkDetail";
 import Assignment from "./components/Page/Assignment";
 import AssignmentDetail from "./components/Page/AssignmentDetail";
+import Result from "./components/Page/Result";
+import Resultdetail from "./components/Page/Resultdetail";
 import Currentjob from "./components/Page/Currentjob";
 import Rent from "./components/Page/Rent";
 import RentInfo from "./components/Page/RentInfo";
@@ -161,6 +163,22 @@ const router = createBrowserRouter([
     element: (
       <Layout>
         <Currentjob />
+      </Layout>
+    ),
+  },
+  {
+    path: "/result",
+    element: (
+      <Layout>
+        <Result />
+      </Layout>
+    ),
+  },
+  {
+    path: "/resultdetail/:tripId",
+    element: (
+      <Layout>
+        <Resultdetail />
       </Layout>
     ),
   },
