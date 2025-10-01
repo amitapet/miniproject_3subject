@@ -23,6 +23,7 @@ import Assignment from "./components/Page/Assignment";
 import Currentjob from "./components/Page/Currentjob";
 import Rent from "./components/Page/Rent";
 import RentInfo from "./components/Page/RentInfo";
+import Reportforceo from "./components/Page/reportfoeceo";
 
 
 const router = createBrowserRouter([
@@ -42,7 +43,7 @@ const router = createBrowserRouter([
   { path: "/roles", element: <Layout><Roles /></Layout> },
   { path: "/employees", element: <Layout><Employees /></Layout> },
   { path: "/departments", element: <Layout><Departments /></Layout> },
-  { path: "/reports/report1", element: <Layout><Report1 /></Layout> },
+  { path: "/report1", element: <Layout><Report1 /></Layout> },
   { path: "/reports/report3", element: <Layout><Report3 /></Layout> },
   { path: "/reports/report6", element: <Layout><Report6 /></Layout> },
   { path: "/profile", element: <Layout><Profile /></Layout> },
@@ -51,6 +52,7 @@ const router = createBrowserRouter([
   { path: "/current-job", element: <Layout><Currentjob /></Layout> },
   { path: "/Rent", element: <Layout><Rent /></Layout> },
   { path: "/RentInfo", element: <Layout><RentInfo /></Layout> },
+  { path: "/reportforceo", element: <Layout><Reportforceo /></Layout> },
 
 ]);
 

@@ -255,6 +255,7 @@ function Positions() {
                   "WORK_SCHEDULE",
                   "ASSIGNMENT",
                   "CURRENTJOB",
+                  "REPORTFORCEO"
                 ].map((perm) => (
                   <label key={perm}>
                     <input
@@ -291,6 +292,7 @@ function Positions() {
                       WORK_SCHEDULE: 0,
                       ASSIGNMENT: 0,
                       CURRENTJOB: 0,
+                      REPORTFORCEO:0,
                     });
                     setEditingId(null);
                   }}

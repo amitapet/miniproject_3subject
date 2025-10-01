@@ -463,7 +463,8 @@ app.put("/POSITION/:id", async (req, res) => {
           PROFILE = :PROFILE,
           WORK_SCHEDULE = :WORK_SCHEDULE,
           ASSIGNMENT = :ASSIGNMENT,
-          CURRENTJOB = :CURRENTJOB
+          CURRENTJOB = :CURRENTJOB,
+          REPORTFORCEO = :REPORTFORCEO,
          WHERE ID = :ID`,
         { ID: permissionId, ...permissions }
       );
@@ -805,7 +806,7 @@ app.delete("/Employee/:id", async (req, res) => {
 app.get("/stations", async (req, res) => {
   let connection;
   try {
-    console.log("📝 Fetching stations...");
+    console.log("Fetching stations...");
     connection = await oracledb.getConnection(dbConfig);
     const result = await connection.execute(
       `SELECT ID, NAME FROM STATION ORDER BY ID`,
@@ -813,11 +814,11 @@ app.get("/stations", async (req, res) => {
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
 
-    console.log(`✅ Found ${result.rows.length} stations`);
+    console.log(`Found ${result.rows.length} stations`);
     console.log("Stations:", result.rows);
     res.json(result.rows);
   } catch (err) {
-    console.error("❌ GET /stations error:", err);
+    console.error("GET /stations error:", err);
     res.status(500).json({
       error: "Database query failed",
       details: err.message,
@@ -838,7 +839,7 @@ app.get("/stations", async (req, res) => {
 app.get("/carroutes", async (req, res) => {
   let connection;
   try {
-    console.log("📝 Fetching routes...");
+    console.log("Fetching routes...");
     connection = await oracledb.getConnection(dbConfig);
 
     const result = await connection.execute(
@@ -847,10 +848,10 @@ app.get("/carroutes", async (req, res) => {
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
 
-    console.log(`✅ Found ${result.rows.length} routes`);
+    console.log(`Found ${result.rows.length} routes`);
     res.json(result.rows);
   } catch (err) {
-    console.error("❌ GET /carroutes error:", err);
+    console.error("GET /carroutes error:", err);
     res.status(500).json({
       error: "Database query failed",
       details: err.message,
@@ -869,31 +870,31 @@ app.get("/carroutes", async (req, res) => {
 
 // เพิ่มเส้นทางรถ
 app.post("/carroutes", async (req, res) => {
-  console.log("📝 POST /carroutes request received");
+  console.log("POST /carroutes request received");
   console.log("Request body:", JSON.stringify(req.body, null, 2));
 
   const { id, nameRoute, stations, totalTime } = req.body;
 
   // ตรวจสอบข้อมูล
   if (!nameRoute || nameRoute.trim() === "") {
-    console.log("❌ Validation failed: nameRoute is required");
+    console.log("Validation failed: nameRoute is required");
     return res.status(400).json({ error: "Route name is required" });
   }
 
   if (!stations || !Array.isArray(stations) || stations.length === 0) {
-    console.log("❌ Validation failed: stations are required");
+    console.log("Validation failed: stations are required");
     return res.status(400).json({ error: "At least one station is required" });
   }
 
   let connection;
   try {
-    console.log("🔌 Connecting to database...");
+    console.log("Connecting to database...");
     connection = await oracledb.getConnection(dbConfig);
-    console.log("✅ Database connected");
+    console.log("Database connected");
     let routeId = id && id.trim() ? id.trim() : null;
 
     // Insert Route
-    console.log("💾 Inserting route...");
+    console.log("Inserting route...");
     const insertResult = await connection.execute(
       `INSERT INTO ROUTE (ID, NAME_ROUTE, TOTALSUM_TIME) 
       VALUES (:ID, :NAME_ROUTE, :TOTALSUM_TIME)`,
@@ -903,9 +904,8 @@ app.post("/carroutes", async (req, res) => {
         TOTALSUM_TIME: totalTime || 0,
       }
     );
-
     console.log(
-      `✅ Route inserted successfully. Rows affected: ${insertResult.rowsAffected}`
+      `Route inserted successfully. Rows affected: ${insertResult.rowsAffected}`
     );
 
     // แทรก stations
@@ -924,7 +924,7 @@ app.post("/carroutes", async (req, res) => {
     );
 
     console.log(
-      `✅ Stations inserted successfully. Rows affected: ${stationResult.rowsAffected}`
+      `Stations inserted successfully. Rows affected: ${stationResult.rowsAffected}`
     );
 
     // Commit ทั้งหมด
@@ -937,7 +937,7 @@ app.post("/carroutes", async (req, res) => {
       totalTime: totalTime || 0,
     });
   } catch (err) {
-    console.error("❌ POST /carroutes error:", err);
+    console.error("POST /carroutes error:", err);
 
     // ตรวจสอบ ID ซ้ำ
     if (err.message && err.message.includes("ORA-00001")) {
@@ -955,7 +955,7 @@ app.post("/carroutes", async (req, res) => {
     if (connection) {
       try {
         await connection.close();
-        console.log("🔌 Database connection closed");
+        console.log("Database connection closed");
       } catch (closeErr) {
         console.error("Connection close error:", closeErr);
       }
@@ -968,7 +968,7 @@ app.get("/carroutes/:id", async (req, res) => {
   let connection;
   try {
     const { id } = req.params;
-    console.log("📝 Fetching routes for ID:", id);
+    console.log("Fetching routes for ID:", id);
     connection = await oracledb.getConnection(dbConfig);
     const result = await connection.execute(
       `SELECT ID, STOPS_ID, ID_ROUTE, STATION_TIME , SEQ_NO
@@ -979,10 +979,10 @@ app.get("/carroutes/:id", async (req, res) => {
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
 
-    console.log(`✅ Found ${result.rows.length} ROUTE_STATIONS`);
+    console.log(`Found ${result.rows.length} ROUTE_STATIONS`);
     res.json(result.rows);
   } catch (err) {
-    console.error("❌ GET /carroutes/:id error:", err);
+    console.error("GET /carroutes/:id error:", err);
     res.status(500).json({
       error: "Database query failed",
       details: err.message,
@@ -1004,7 +1004,7 @@ app.get("/route_stations/:id", async (req, res) => {
   let connection;
   try {
     const { id } = req.params;
-    console.log("📝 Fetching routes for ID:", id);
+    console.log("Fetching routes for ID:", id);
     connection = await oracledb.getConnection(dbConfig);
     const result = await connection.execute(
       `SELECT ID, ID_ROUTE , STOPS_ID, STATION_TIME , SEQ_NO
@@ -1015,10 +1015,10 @@ app.get("/route_stations/:id", async (req, res) => {
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
 
-    console.log(`✅ Found ${result.rows.length} ROUTE_STATIONS`);
+    console.log(`Found ${result.rows.length} ROUTE_STATIONS`);
     res.json(result.rows);
   } catch (err) {
-    console.error("❌ GET /route_stations error:", err);
+    console.error("GET /route_stations error:", err);
     res.status(500).json({
       error: "Database query failed",
       details: err.message,
@@ -1043,10 +1043,19 @@ app.put("/carroutes/:id", async (req, res) => {
   if (!nameRoute || nameRoute.trim() === "") {
     return res.status(400).json({ error: "Route name is required" });
   }
+  const binds = stations.map((s) => ({
+    routeId: id,
+    stopsId: Number(s.stops_id),
+    stationTime: Number(s.station_time),
+    seqNo: Number(s.seq_no),
+  }));
 
   let connection;
   try {
     connection = await oracledb.getConnection(dbConfig);
+
+    console.log("stations payload:", stations);
+    console.log("binds before insert:", binds);
 
     // อัพเดต ROUTE
     const result = await connection.execute(
@@ -1125,7 +1134,7 @@ app.delete("/carroutes/:id", async (req, res) => {
     }
     res.json({ message: "Route deleted successfully!" });
   } catch (err) {
-    console.error("❌ DELETE /carroutes/:id error:", err);
+    console.error("DELETE /carroutes/:id error:", err);
     res
       .status(500)
       .json({ error: "Database delete failed", details: err.message });
@@ -1352,20 +1361,240 @@ ORDER BY TOTAL DESC
   }
 });
 
-// Error handler
-app.use((err, req, res, next) => {
-  console.error("🔥 Unhandled error:", err);
-  res
-    .status(500)
-    .json({ error: "Internal server error", details: err.message });
+// =========================== ส่วนของ API TRIP =============================
+
+// ---------- GET TRIP ทั้งหมด (คืน DATE_TRIP เป็น 'YYYY-MM-DD' string เพื่อเลี่ยง timezone) ----------
+app.get("/TRIP", async (req, res) => {
+  let connection;
+  try {
+    connection = await oracledb.getConnection();
+    const result = await connection.execute(
+      `SELECT 
+          t.ID AS TRIP_ID,
+          TO_CHAR(t.DATE_TRIP,'YYYY-MM-DD') AS DATE_TRIP,
+          t.TIMEOUT,
+          c.ID AS CAR_ID, c.SEAT,
+          tc.ID AS TYPECAR_ID, tc.NAME AS TYPECAR_NAME,
+          e.ID AS EMPLOYEE_ID, e.FNAME || ' ' || e.LNAME AS EMPLOYEE_NAME,
+          p.ID AS POSITION_ID, p.NAME AS POSITION_NAME,
+          r.ID AS ROUTE_ID, r.NAME_ROUTE, r.TOTALSUM_TIME,
+          s.ID AS STATION_ID, s.NAME AS STATION_NAME,
+          rs.ID AS ROUTE_STATIONS_ID, rs.STATION_TIME, rs.SEQ_NO
+       FROM TRIP t
+        LEFT JOIN CAR c ON t.ID_CAR = c.ID
+        LEFT JOIN TYPE_CAR tc ON c.ID_TYPECAR = tc.ID
+        LEFT JOIN EMPLOYEE e ON t.ID_EMPLOYEE = e.ID
+        LEFT JOIN POSITION p ON e.ID_POSITION = p.ID
+        LEFT JOIN ROUTE r ON t.ID_ROUTE = r.ID
+        LEFT JOIN ROUTE_STATIONS rs ON r.ID = rs.ID_ROUTE
+        LEFT JOIN STATION s ON rs.STOPS_ID = s.ID
+       ORDER BY t.ID, rs.SEQ_NO`,
+      [],
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    // Build JSON same as before (DATE_TRIP now is string 'YYYY-MM-DD')
+    const trips = result.rows.reduce((acc, row) => {
+      let trip = acc.find((t) => t.TRIP_ID === row.TRIP_ID);
+      if (!trip) {
+        trip = {
+          TRIP_ID: row.TRIP_ID,
+          DATE_TRIP: row.DATE_TRIP,
+          TIMEOUT: row.TIMEOUT,
+          CAR: row.CAR_ID
+            ? {
+                ID: row.CAR_ID,
+                SEAT: row.SEAT,
+                TYPE: row.TYPECAR_ID
+                  ? { ID: row.TYPECAR_ID, NAME: row.TYPECAR_NAME }
+                  : null,
+              }
+            : null,
+          EMPLOYEE: row.EMPLOYEE_ID
+            ? {
+                ID: row.EMPLOYEE_ID,
+                NAME: row.EMPLOYEE_NAME,
+                POSITION: row.POSITION_ID
+                  ? { ID: row.POSITION_ID, NAME: row.POSITION_NAME }
+                  : null,
+              }
+            : null,
+          ROUTE: row.ROUTE_ID
+            ? {
+                ID: row.ROUTE_ID,
+                NAME: row.NAME_ROUTE,
+                TOTALSUM_TIME: row.TOTALSUM_TIME,
+                STATIONS: [],
+              }
+            : null,
+        };
+        acc.push(trip);
+      }
+
+      if (trip.ROUTE && row.ROUTE_STATIONS_ID) {
+        trip.ROUTE.STATIONS.push({
+          ROUTE_STATIONS_ID: row.ROUTE_STATIONS_ID,
+          STATION_ID: row.STATION_ID,
+          STATION_NAME: row.STATION_NAME,
+          STATION_TIME: row.STATION_TIME,
+          SEQ_NO: row.SEQ_NO,
+        });
+      }
+      return acc;
+    }, []);
+
+    res.json(trips);
+  } catch (err) {
+    console.error("GET /TRIP error:", err);
+    res.status(500).json({ error: "DB Error", details: err.message });
+  } finally {
+    if (connection) await connection.close();
+  }
 });
 
-// 404 handler
-app.use((req, res) => {
-  console.log(`❌ 404: ${req.method} ${req.url} not found`);
-  res
-    .status(404)
-    .json({ error: `Endpoint ${req.method} ${req.url} not found` });
+// ---------- GET TRIP by id ----------
+app.get("/TRIP/:id", async (req, res) => {
+  const { id } = req.params;
+  let connection;
+  try {
+    connection = await oracledb.getConnection();
+    const result = await connection.execute(
+      `SELECT ID,
+              TO_CHAR(DATE_TRIP,'YYYY-MM-DD') AS DATE_TRIP,
+              TIMEOUT, ID_CAR, ID_ROUTE, ID_EMPLOYEE
+       FROM TRIP WHERE ID = :id`,
+      [id],
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+    if (result.rows.length === 0)
+      return res.status(404).json({ error: "TRIP not found" });
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("GET /TRIP/:id error:", err);
+    res.status(500).json({ error: "DB Error", details: err.message });
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+
+// ---------- POST TRIP (ใช้ TO_DATE เพื่อรับ 'YYYY-MM-DD' string safely) ----------
+app.post("/TRIP", async (req, res) => {
+  const { DATE_TRIP, TIMEOUT, ID_CAR, ID_EMPLOYEE, ID_ROUTE } = req.body;
+  let connection;
+  try {
+    connection = await oracledb.getConnection();
+    const result = await connection.execute(
+      `INSERT INTO TRIP (ID, DATE_TRIP, TIMEOUT, ID_CAR, ID_EMPLOYEE, ID_ROUTE)
+       VALUES ((SELECT NVL(MAX(ID),0)+1 FROM TRIP), TO_DATE(:DATE_TRIP,'YYYY-MM-DD'), :TIMEOUT, :ID_CAR, :ID_EMPLOYEE, :ID_ROUTE)
+       RETURNING ID INTO :ID`,
+      {
+        DATE_TRIP,
+        TIMEOUT,
+        ID_CAR,
+        ID_EMPLOYEE,
+        ID_ROUTE,
+        ID: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
+      },
+      { autoCommit: true }
+    );
+    res
+      .status(201)
+      .json({ message: "TRIP created", TRIP_ID: result.outBinds.ID[0] });
+  } catch (err) {
+    console.error("POST /TRIP error:", err);
+    res.status(500).json({ error: "DB Error", details: err.message });
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+
+// ---------- PUT TRIP (แก้ไข) ----------
+app.put("/TRIP/:id", async (req, res) => {
+  const { id } = req.params;
+  const { DATE_TRIP, TIMEOUT, ID_CAR, ID_EMPLOYEE, ID_ROUTE } = req.body;
+  let connection;
+  try {
+    connection = await oracledb.getConnection();
+    const result = await connection.execute(
+      `UPDATE TRIP SET DATE_TRIP = TO_DATE(:DATE_TRIP,'YYYY-MM-DD'),
+                       TIMEOUT = :TIMEOUT,
+                       ID_CAR = :ID_CAR,
+                       ID_EMPLOYEE = :ID_EMPLOYEE,
+                       ID_ROUTE = :ID_ROUTE
+       WHERE ID = :ID`,
+      { DATE_TRIP, TIMEOUT, ID_CAR, ID_EMPLOYEE, ID_ROUTE, ID: id },
+      { autoCommit: true }
+    );
+    if (result.rowsAffected === 0)
+      return res.status(404).json({ error: "TRIP not found" });
+    res.json({ message: "TRIP updated" });
+  } catch (err) {
+    console.error("PUT /TRIP/:id error:", err);
+    res.status(500).json({ error: "DB Error", details: err.message });
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+
+// ----- DELETE TRIP -----
+app.delete("/TRIP/:id", async (req, res) => {
+  const { id } = req.params;
+  let connection;
+  try {
+    connection = await oracledb.getConnection();
+    const result = await connection.execute(
+      `DELETE FROM TRIP WHERE ID = :ID`,
+      [Number(id)],
+      { autoCommit: true }
+    );
+    if (result.rowsAffected === 0) {
+      return res.status(404).json({ error: "TRIP not found" });
+    }
+    res.json({ message: "TRIP deleted" });
+  } catch (err) {
+    console.error("DELETE /TRIP/:id error:", err);
+    res.status(500).json({ error: "DB Error", details: err.message });
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+
+//=================================ส่วนของ API แสดงตารางสถานี======================================
+// GET route_stations by route ID
+
+app.get("/trip/route_stations/:id", async (req, res) => {
+  let connection;
+  try {
+    const routeId = req.params.id;
+    connection = await oracledb.getConnection(dbConfig);
+
+    const result = await connection.execute(
+      `SELECT 
+          rs.ID AS ROUTE_STATIONS_ID,
+          rs.SEQ_NO,
+          s.NAME AS STATION_NAME,
+          rs.STATION_TIME
+       FROM ROUTE_STATIONS rs
+       JOIN STATION s ON rs.STOPS_ID = s.ID
+       WHERE rs.ID_ROUTE = :routeId
+       ORDER BY rs.SEQ_NO`,
+      [routeId],
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Error fetching route stations" });
+  } finally {
+    if (connection) {
+      try {
+        await connection.close();
+      } catch (err) {
+        console.error("Connection close error:", err);
+      }
+    }
+  }
 });
 
 //=================================ส่วนของ API รายงาน1======================================
@@ -1377,33 +1606,68 @@ app.get("/report1", async (req, res) => {
     connection = await oracledb.getConnection(dbConfig);
 
     let sql = `
-      SELECT 
-        TO_CHAR(RESERVE_DATE, 'MM') AS MONTH_NUM,
-        STARTT AS STATION,
-        COUNT(CASE WHEN STARTT IS NOT NULL THEN 1 END) AS TOTAL_UP,
-        COUNT(CASE WHEN STOPP IS NOT NULL THEN 1 END) AS TOTAL_DOWN
-      FROM RESERVE
-      WHERE 1=1
+      SELECT month_num, station_name,
+             SUM(passenger_in)   AS PASSENGER_IN,
+             SUM(passenger_out)  AS PASSENGER_OUT
+      FROM (
+        SELECT
+          EXTRACT(MONTH FROM t.DATE_TRIP) AS month_num,
+          s_in.name AS station_name,
+          SUM(r.SEAT) AS passenger_in,
+          0        AS passenger_out
+        FROM RESERVE r
+        JOIN TRIP t ON r.TRIP_ID = t.ID
+        JOIN STATION s_in ON r.STARTT = s_in.ID
+        WHERE 1=1
     `;
 
     const binds = {};
 
-    // ✅ Filter by year
+    //Filter ปี
     if (year) {
-      const gregorianYear = parseInt(year) - 543; // แปลง พ.ศ. → ค.ศ.
-      sql += ` AND EXTRACT(YEAR FROM RESERVE_DATE) = :y `;
-      binds.y = gregorianYear;
+      let yearCE = parseInt(year);
+      if (yearCE > 2500) {
+        yearCE -= 543; // แปลง พ.ศ. → ค.ศ.
+      }
+      sql += ` AND EXTRACT(YEAR FROM t.DATE_TRIP) = :y `;
+      binds.y = yearCE;
     }
 
-    // ✅ Filter by month
+    // Filter เดือน
     if (month) {
-      sql += ` AND EXTRACT(MONTH FROM RESERVE_DATE) = :m `;
+      sql += ` AND EXTRACT(MONTH FROM t.DATE_TRIP) = :m `;
       binds.m = parseInt(month);
     }
 
     sql += `
-      GROUP BY TO_CHAR(RESERVE_DATE, 'MM'), STARTT
-      ORDER BY TO_CHAR(RESERVE_DATE, 'MM')
+        GROUP BY EXTRACT(MONTH FROM t.DATE_TRIP), s_in.name
+        UNION ALL
+        SELECT
+          EXTRACT(MONTH FROM t.DATE_TRIP) AS month_num,
+          s_out.name AS station_name,
+          0        AS passenger_in,
+          SUM(r.SEAT) AS passenger_out
+        FROM RESERVE r
+        JOIN TRIP t ON r.TRIP_ID = t.ID
+        JOIN STATION s_out ON r.STOPT = s_out.ID
+        WHERE 1=1
+    `;
+
+    //เงื่อนไขปี (ขาลง)
+    if (year) {
+      sql += ` AND EXTRACT(YEAR FROM t.DATE_TRIP) = :y `;
+    }
+
+    //เงื่อนไขเดือน (ขาลง)
+    if (month) {
+      sql += ` AND EXTRACT(MONTH FROM t.DATE_TRIP) = :m `;
+    }
+
+    sql += `
+        GROUP BY EXTRACT(MONTH FROM t.DATE_TRIP), s_out.name
+      ) x
+      GROUP BY month_num, station_name
+      ORDER BY month_num, station_name
     `;
 
     const result = await connection.execute(sql, binds);
@@ -1418,15 +1682,74 @@ app.get("/report1", async (req, res) => {
 
     res.json(rows);
   } catch (err) {
-    console.error(err);
+    console.error("SQL Error:", err);
     res.status(500).json({ error: err.message });
   } finally {
     if (connection) {
       try {
         await connection.close();
       } catch (err) {
-        console.error(err);
+        console.error("Close conn error:", err);
       }
     }
   }
+});
+
+// API report6
+app.get("/report6", async (req, res) => {
+  const { start, end } = req.query;
+  let connection;
+
+  try {
+    connection = await oracledb.getConnection(dbConfig);
+
+    const result = await connection.execute(
+      `
+      SELECT 
+        e.id AS EMPLOYEE_ID,
+        e.fname || ' ' || e.lname AS EMPLOYEE_NAME,
+        COUNT(sd.id) AS TOTAL,
+        SUM(CASE WHEN TO_NUMBER(REGEXP_SUBSTR(sd.TIME_IN, '^[0-9]+(\.[0-9]+)?')) < 17 THEN 1 ELSE 0 END) AS BEFORE17,
+        SUM(CASE WHEN TO_NUMBER(REGEXP_SUBSTR(sd.TIME_IN, '^[0-9]+(\.[0-9]+)?')) >= 17 THEN 1 ELSE 0 END) AS AFTER17
+      FROM employee e
+      JOIN work w ON w.EMP_ID = e.id AND w.STATUS = 'finished'
+      JOIN trip t ON t.id = w.TRIP_ID
+      JOIN stop_duration sd ON t.id = sd.id_trip
+      WHERE t.date_trip BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') 
+                AND TO_DATE(:endDate, 'YYYY-MM-DD')
+      GROUP BY e.id, e.fname, e.lname
+      ORDER BY TOTAL DESC
+      `,
+      { startDate: start, endDate: end },
+      { outFormat: require("oracledb").OUT_FORMAT_OBJECT }
+    );
+
+    const rows = result.rows;
+    if (rows.length > 0) {
+      const grandTotal = {
+        EMPLOYEE_ID: "",
+        EMPLOYEE_NAME: "รวมทั้งหมด",
+        TOTAL: rows.reduce((sum, r) => sum + (r.TOTAL || 0), 0),
+        BEFORE17: rows.reduce((sum, r) => sum + (r.BEFORE17 || 0), 0),
+        AFTER17: rows.reduce((sum, r) => sum + (r.AFTER17 || 0), 0),
+      };
+      rows.push(grandTotal);
+    }
+    res.json(rows);
+  } catch (err) {
+    console.error("❌ Database Error:", err);
+    res.status(500).json({ error: "Database error: " + err.message });
+  } finally {
+    if (connection) {
+      await connection.close();
+    }
+  }
+});
+
+// 404 handler
+app.use((req, res) => {
+  console.log(`404: ${req.method} ${req.url} not found`);
+  res
+    .status(404)
+    .json({ error: `Endpoint ${req.method} ${req.url} not found` });
 });

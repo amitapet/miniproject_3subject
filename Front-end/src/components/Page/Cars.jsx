@@ -224,7 +224,7 @@ function Cars() {
                 onChange={handleTypeFormChange}
                 required
               />
-              <button type="button" className="btn-submit">
+               <button type="submit" className="btn-submit">
                 เพิ่ม
               </button>
             </form>
