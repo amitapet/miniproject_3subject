@@ -1041,10 +1041,19 @@ app.put("/carroutes/:id", async (req, res) => {
   if (!nameRoute || nameRoute.trim() === "") {
     return res.status(400).json({ error: "Route name is required" });
   }
+  const binds = stations.map((s) => ({
+    routeId: id,
+    stopsId: Number(s.stops_id),
+    stationTime: Number(s.station_time),
+    seqNo: Number(s.seq_no),
+  }));
 
   let connection;
   try {
     connection = await oracledb.getConnection(dbConfig);
+
+    console.log("stations payload:", stations);
+    console.log("binds before insert:", binds);
 
     // อัพเดต ROUTE
     const result = await connection.execute(
@@ -1545,7 +1554,7 @@ app.get("/report1", async (req, res) => {
         SELECT
           EXTRACT(MONTH FROM t.DATE_TRIP) AS month_num,
           s_in.name AS station_name,
-          COUNT(*) AS passenger_in,
+          SUM(r.SEAT) AS passenger_in,
           0        AS passenger_out
         FROM RESERVE r
         JOIN TRIP t ON r.TRIP_ID = t.ID
@@ -1578,7 +1587,7 @@ app.get("/report1", async (req, res) => {
           EXTRACT(MONTH FROM t.DATE_TRIP) AS month_num,
           s_out.name AS station_name,
           0        AS passenger_in,
-          COUNT(*) AS passenger_out
+          SUM(r.SEAT) AS passenger_out
         FROM RESERVE r
         JOIN TRIP t ON r.TRIP_ID = t.ID
         JOIN STATION s_out ON r.STOPT = s_out.ID
@@ -1627,56 +1636,10 @@ app.get("/report1", async (req, res) => {
   }
 });
 
-// ========================================
-// Report 3
-// ========================================
-app.get("/reports/report3", async (req, res) => {
-  const { start_date, end_date } = req.query;
-
-  if (!start_date || !end_date) {
-    return res.status(400).json({ error: "กรุณาระบุวันเริ่มต้นและวันสิ้นสุด" });
-  }
-
-  let connection;
-
-  try {
-    connection = await oracledb.getConnection(dbConfig);
-
-    const sql = `
-      SELECT 
-        c.fname || ' ' || c.lname AS USERNAME,
-        COUNT(r.id) AS TOTAL_RESERVES,
-        COUNT(CASE WHEN r.status = 'getin' THEN 1 END) AS RIDES_ACTUAL,
-        COUNT(CASE WHEN r.status = 'cancel' THEN 1 END) AS CANCELLED,
-        COUNT(CASE WHEN r.status = '-' THEN 1 END) AS NO_SHOW
-      FROM customer c
-      LEFT JOIN reserve r 
-        ON r.cus_id = c.id
-       AND r.reserve_date BETWEEN TO_DATE(:start_date, 'YYYY-MM-DD') 
-                               AND TO_DATE(:end_date, 'YYYY-MM-DD')
-      GROUP BY c.fname, c.lname
-    `;
-
-    const result = await connection.execute(sql, {
-      start_date,
-      end_date,
-    });
-
-    res.json(
-      result.rows.map((row) => ({
-        USERNAME: row[0],
-        TOTAL_RESERVES: row[1],
-        RIDES_ACTUAL: row[2],
-        CANCELLED: row[3],
-        NO_SHOW: row[4],
-      }))
-    );
-  } catch (err) {
-    console.error("❌ Database Error:", err);
-    res.status(500).json({ error: "Database error: " + err.message });
-  } finally {
-    if (connection) {
-      await connection.close();
-    }
-  }
+// 404 handler
+app.use((req, res) => {
+  console.log(`404: ${req.method} ${req.url} not found`);
+  res
+    .status(404)
+    .json({ error: `Endpoint ${req.method} ${req.url} not found` });
 });
