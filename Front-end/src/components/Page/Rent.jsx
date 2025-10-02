@@ -10,6 +10,10 @@ function Rent() {
 
   const [stations, setStations] = useState([]);
   const [schedules, setSchedules] = useState([]);
+  const [bookedSeats, setBookedSeats] = useState({}); // เก็บจำนวนที่จองต่อ trip ID
+  const [reservedSeatsDB, setReservedSeatsDB] = useState({}); // เก็บจำนวนที่จองจาก DB
+  const [vehicleTypes, setVehicleTypes] = useState([]); // ประเภทรถที่มีในระบบ
+  const [currentPage, setCurrentPage] = useState(1);
   const [form, setForm] = useState({
     origin: { id: "", name: "" },
     destination: { id: "", name: "" },
@@ -17,10 +21,6 @@ function Rent() {
     date: "",
     seats: 1,
   });
-
-  const [bookedSeats, setBookedSeats] = useState({}); // เก็บจำนวนที่จองต่อ trip ID
-  const [reservedSeatsDB, setReservedSeatsDB] = useState({}); // เก็บจำนวนที่จองจาก DB
-  const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10; // จำนวนแถวต่อหน้า
 
   useEffect(() => {
@@ -36,6 +36,10 @@ function Rent() {
         console.error("❌ โหลดข้อมูลสถานีไม่สำเร็จ:", error);
       }
     };
+
+    axios.get("http://localhost:3000/vehicleTypes")
+         .then((res) => setVehicleTypes(res.data))
+         .catch((err) => console.error("❌ โหลดชนิดรถ 🚗",err));
 
     const fetchReservedSeats = async () => {
       try {
@@ -77,27 +81,46 @@ function Rent() {
   };
 
   const handleSearch = async () => {
-    if (!form.origin.id || !form.destination.id) {
-      alert("กรุณาเลือกต้นทางและปลายทางก่อนค้นหา");
-      return;
+  if (!form.origin.id || !form.destination.id) {
+    alert("กรุณาเลือกต้นทางและปลายทางก่อนค้นหา");
+    return;
+  }
+
+  try {
+    const url = `http://localhost:3000/rentinfo/${form.origin.id}/${form.destination.id}`;
+    const res = await axios.get(url);
+
+    let filtered = res.data;
+
+    // filter ตามวันเดินทาง
+    if (form.date) {
+      filtered = filtered.filter(
+        (trip) => trip.DATE_TRIP === form.date
+      );
     }
-    try {
-      const url = `http://localhost:3000/rentinfo/${form.origin.id}/${form.destination.id}`;
-      const res = await axios.get(url);
-      setSchedules(res.data);
-      setCurrentPage(1); // กลับไปหน้าแรกเมื่อค้นหาใหม่
-    } catch (error) {
-      console.error("❌ โหลดข้อมูลรอบรถไม่สำเร็จ:", error);
-      alert("เกิดข้อผิดพลาดขณะค้นหาข้อมูลรอบรถ");
+
+    // filter ตามจำนวนที่นั่ง
+    filtered = filtered.filter((trip) => {
+      const bookedSession = bookedSeats[trip.ID] || 0;
+      const bookedDB = reservedSeatsDB[trip.ID] || 0;
+      const seatsLeft = trip.SEAT - bookedDB - bookedSession;
+      return seatsLeft >= Number(form.seats);
+    });
+
+    // filter ตามประเภทรถ
+    if (form.vehicle && form.vehicle !== "ทุกประเภท") {
+      filtered = filtered.filter((trip) => trip.NAME === form.vehicle);
     }
-  };
+
+    setSchedules(filtered);
+    setCurrentPage(1);
+  } catch (error) {
+    console.error("❌ โหลดข้อมูลรอบรถไม่สำเร็จ:", error);
+    alert("เกิดข้อผิดพลาดขณะค้นหาข้อมูลรอบรถ");
+  }
+};
 
   const handleBooking = async (trip) => {
-    if (!form.date) {
-      alert("กรุณาเลือกวันเดินทางก่อนจอง");
-      return;
-    }
-
     const bookedSession = bookedSeats[trip.ID] || 0;
     const bookedDB = reservedSeatsDB[trip.ID] || 0;
     const seatsLeft = trip.SEAT - bookedDB - bookedSession;
@@ -174,9 +197,10 @@ function Rent() {
           <label>
             ประเภทรถ :
             <select name="vehicle" value={form.vehicle} onChange={handleChange}>
-              <option>ทุกประเภท</option>
-              <option>รถบัส</option>
-              <option>รถตู้</option>
+              <option value="ทุกประเภท">ทุกประเภท</option>
+              {vehicleTypes.map((v, i) => (
+                <option key={i} value={v.NAME}>{v.NAME}</option>
+              ))}
             </select>
           </label>
 
@@ -196,7 +220,6 @@ function Rent() {
         <table className="table-container">
           <thead>
             <tr>
-              <th>ID</th>
               <th>วันที่</th>
               <th>เวลาออกรถ</th>
               <th>ประเภทรถ</th>
@@ -214,7 +237,6 @@ function Rent() {
 
                 return (
                   <tr key={trip.ID}>
-                    <td>{trip.ID}</td>
                     <td>{trip.DATE_TRIP}</td>
                     <td>{trip.TIMEOUT}</td>
                     <td>{trip.NAME}</td>

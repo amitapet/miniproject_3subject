@@ -317,6 +317,25 @@ app.get("/reservedSeats", async (req, res) => {
   }
 });
 
+// ดึงประเภทของรถทั้งหมด
+app.get("/vehicleTypes", async (req, res) => {
+  let connection;
+  try {
+    connection = await oracledb.getConnection(dbConfig);
+    const result = await connection.execute(
+      `SELECT DISTINCT name FROM TYPE_CAR ORDER BY name`,
+      {},
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+    res.json(result.rows); // [{NAME:"รถบัส"}, {NAME:"รถตู้"}, ...]
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error fetching vehicle types");
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+
 //END RESERVE
 
 //CANCEL RESERVE
