@@ -210,11 +210,11 @@ function RentInfo() {
                   <td>{b.driver}</td>
                   <td>
                     {b.startDate}&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
-                    {Number(b.startTime).toFixed(2).padStart(5, "0")} น.
+                    {b.startTime} น.
                   </td>
                   <td>
                     {b.arrivalDate}&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
-                    {Number(b.arrivalTime).toFixed(2).padStart(5, "0")} น.
+                    {b.arrivalTime} น.
                   </td>
                   <td>{b.seats}</td>
                   <td>{b.status}</td>
