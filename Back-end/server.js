@@ -174,7 +174,7 @@ app.get("/rentinfo/:start/:stop", async (req, res) => {
     const stop = req.params.stop;
 
     const result = await connection.execute(
-      `select t.id,t.ID_ROUTE, t.date_trip ,t.timeout ,t.ID_CAR, tcar.name, car.seat 
+      `select t.id,t.ID_ROUTE, to_char(t.DATE_TRIP,'dd/ mon/yy') as DATE_TRIP ,t.timeout ,t.ID_CAR, tcar.name, car.seat 
         from trip t
         join car on car.id = t.ID_CAR
         join TYPE_CAR tcar on tcar.id = car.ID_TYPECAR
