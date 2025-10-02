@@ -292,6 +292,31 @@ app.get("/reserve/:cus_id", async (req, res) => {
     if (connection) await connection.close();
   }
 });
+
+// ส่งจำนวนที่จองต่อ trip_id
+app.get("/reservedSeats", async (req, res) => {
+  let connection;
+  try {
+    connection = await oracledb.getConnection(dbConfig);
+
+    const result = await connection.execute(
+      `select s.trip_id , sum(s.seat) as seat
+        from (select * from RESERVE 
+        where STATUS ='-') s
+        GROUP BY s.trip_id`,
+      [],
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    res.json(result.rows); // [{ TRIP_ID: 1, SEAT: 3 }, ...]
+  } catch (err) {
+    console.error("❌ GET /reservedSeats error:", err);
+    res.status(500).json({ error: "DB Error", details: err.message });
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+
 //END RESERVE
 
 //CANCEL RESERVE

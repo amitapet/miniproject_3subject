@@ -19,9 +19,9 @@ function Rent() {
   });
 
   const [bookedSeats, setBookedSeats] = useState({}); // เก็บจำนวนที่จองต่อ trip ID
-
+  const [reservedSeatsDB, setReservedSeatsDB] = useState({}); // เก็บจำนวนที่จองจาก DB
   const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 10;
+  const rowsPerPage = 10; // จำนวนแถวต่อหน้า
 
   useEffect(() => {
     const fetchStations = async () => {
@@ -36,8 +36,22 @@ function Rent() {
         console.error("❌ โหลดข้อมูลสถานีไม่สำเร็จ:", error);
       }
     };
+
+    const fetchReservedSeats = async () => {
+      try {
+        const res = await axios.get("http://localhost:3000/reservedSeats");
+        const mapped = {};
+        res.data.forEach((r) => {
+          mapped[r.TRIP_ID] = r.SEAT;
+        });
+        setReservedSeatsDB(mapped);
+      } catch (err) {
+        console.error("❌ โหลดจำนวนที่จองจาก DB ไม่สำเร็จ:", err);
+      }
+    };
+    fetchReservedSeats();
     fetchStations();
-  }, []);
+  }, [schedules]);
 
   const handleStationChange = (e, field) => {
     const stationId = e.target.value;
@@ -71,7 +85,7 @@ function Rent() {
       const url = `http://localhost:3000/rentinfo/${form.origin.id}/${form.destination.id}`;
       const res = await axios.get(url);
       setSchedules(res.data);
-      setCurrentPage(1);
+      setCurrentPage(1); // กลับไปหน้าแรกเมื่อค้นหาใหม่
     } catch (error) {
       console.error("❌ โหลดข้อมูลรอบรถไม่สำเร็จ:", error);
       alert("เกิดข้อผิดพลาดขณะค้นหาข้อมูลรอบรถ");
@@ -84,17 +98,23 @@ function Rent() {
       return;
     }
 
-    const booked = bookedSeats[trip.ID] || 0;
-    const seatsLeft = trip.SEAT - booked;
+    const bookedSession = bookedSeats[trip.ID] || 0;
+    const bookedDB = reservedSeatsDB[trip.ID] || 0;
+    const seatsLeft = trip.SEAT - bookedDB - bookedSession;
 
     if (seatsLeft <= 0) {
       alert("รอบนี้เต็มแล้ว");
-      return;
+      return; // ❌ ไม่ทำงานหรอก ใช้ disabled={seatsLeft <= 0} แล้ว
     }
 
-    // ถ้า user ใส่จำนวนเกิน seatsLeft ให้ปรับลง
-    const seatsToBook = Math.min(form.seats, seatsLeft);
+    const seatsToBook = Number(form.seats);
 
+    if (seatsToBook > seatsLeft) {
+      alert(`คุณเลือกจำนวนที่นั่งเกินที่เหลือ จำนวนที่เหลือคือ ${seatsLeft} ที่นั่ง`);
+      return; // ❌ ไม่ส่ง DB
+    }
+    
+    // เตรียมข้อมูลที่จะส่งไป backend
     try {
       const postData = {
         start: form.origin.id,
@@ -108,10 +128,10 @@ function Rent() {
       const res = await axios.post("http://localhost:3000/rent", postData);
       alert(res.data.message);
 
-      // ลดจำนวนที่นั่งเฉพาะ frontend
+      // หลังจองสำเร็จ
       setBookedSeats((prev) => ({
         ...prev,
-        [trip.ID]: (prev[trip.ID] || 0) + form.seats,
+        [trip.ID]: (prev[trip.ID] || 0) + seatsToBook,
       }));
     } catch (err) {
       console.error("❌ จองไม่สำเร็จ:", err);
@@ -119,7 +139,7 @@ function Rent() {
     }
   };
 
-  // Pagination
+   // 🔹 คำนวณข้อมูลที่จะแสดงในหน้าปัจจุบัน Pagination
   const indexOfLastRow = currentPage * rowsPerPage;
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
   const currentRows = schedules.slice(indexOfFirstRow, indexOfLastRow);
@@ -176,6 +196,7 @@ function Rent() {
         <table className="table-container">
           <thead>
             <tr>
+              <th>ID</th>
               <th>วันที่</th>
               <th>เวลาออกรถ</th>
               <th>ประเภทรถ</th>
@@ -187,21 +208,23 @@ function Rent() {
           <tbody>
             {currentRows.length > 0 ? (
               currentRows.map((trip) => {
-                const booked = bookedSeats[trip.ID] || 0;
-                const seatsReal = trip.SEAT - booked;
+                const bookedSession = bookedSeats[trip.ID] || 0;
+                const bookedDB = reservedSeatsDB[trip.ID] || 0;
+                const seatsLeft = trip.SEAT - bookedSession - bookedDB;
 
                 return (
                   <tr key={trip.ID}>
+                    <td>{trip.ID}</td>
                     <td>{trip.DATE_TRIP}</td>
                     <td>{trip.TIMEOUT}</td>
                     <td>{trip.NAME}</td>
-                    <td>{seatsReal > 0 ? seatsReal : 0}</td>
+                    <td>{seatsLeft > 0 ? seatsLeft : 0}</td>
                     <td>{getArrivalTime(trip.TIMEOUT)}</td>
                     <td>
                       <button
                         className="book-btn"
                         onClick={() => handleBooking(trip)}
-                        disabled={seatsReal <= 0}
+                        disabled={seatsLeft <= 0}
                       >
                         จอง
                       </button>
