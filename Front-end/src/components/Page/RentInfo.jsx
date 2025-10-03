@@ -15,6 +15,13 @@ function RentInfo() {
   const [seats, setSeats] = useState(""); // จำนวนที่นั่ง
   const [filteredBookings, setFilteredBookings] = useState([]); //filterแล้ว
   const [selectedBooking, setSelectedBooking] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage] = useState(8); // จำนวนแถวต่อหน้า
+
+  const indexOfLastRow = currentPage * rowsPerPage;
+  const indexOfFirstRow = indexOfLastRow - rowsPerPage;
+  const currentRows = filteredBookings.slice(indexOfFirstRow, indexOfLastRow);
+  const totalPages = Math.ceil(filteredBookings.length / rowsPerPage);
 
   useEffect(() => {
     const fetchBookings = async () => {
@@ -244,7 +251,7 @@ function RentInfo() {
               </tr>
             </thead>
             <tbody>
-              {filteredBookings.map((b) => (
+              {currentRows.map((b) => (
                 <tr key={b.id}>
                   <td>{b.origin}</td>
                   <td>{b.destination}</td>
@@ -285,6 +292,23 @@ function RentInfo() {
             </tbody>
           </table>
         </div>
+        {filteredBookings.length > rowsPerPage && (
+          <div className="pagination">
+            <button
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+            >
+              ก่อนหน้า
+            </button>
+            <span>หน้า {currentPage} / {totalPages}</span>
+            <button
+              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+            >
+              ถัดไป
+            </button>
+          </div>
+        )}
 
         <p className="note">
           *หากเวลาถึงปัจจุบัน - เวลาที่จะถึง &lt; 10 นาที จะไม่สามารถกดยกเลิกได้
