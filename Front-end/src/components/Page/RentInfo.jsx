@@ -11,6 +11,7 @@ function RentInfo() {
   const [fromStation, setFromStation] = useState(""); // ต้นทาง
   const [toStation, setToStation] = useState(""); // ปลายทาง
   const [carType, setCarType] = useState(""); // ประเภทรถ
+  const [date, setDate] = useState(""); // วันเดินทาง
   const [seats, setSeats] = useState(""); // จำนวนที่นั่ง
   const [filteredBookings, setFilteredBookings] = useState([]); //filterแล้ว
   const [selectedBooking, setSelectedBooking] = useState(null);
@@ -78,6 +79,7 @@ function RentInfo() {
         (fromStation === "" || b.origin === fromStation) &&
         (toStation === "" || b.destination === toStation) &&
         (carType === "" || b.vehicle === carType) &&
+        (date === "" || parseThaiDate(b.startDate) === date) &&
         (seats === "" || b.seats >= Number(seats))
     );
     setFilteredBookings(filtered);
@@ -87,6 +89,42 @@ function RentInfo() {
     new Set(bookings.flatMap((b) => [b.origin, b.destination]))
   );
   const carTypes = Array.from(new Set(bookings.map((b) => b.vehicle)));
+
+  // ฟังก์ชันแปลง "20-ก.ย.-25" → "2025-09-20"
+  const parseThaiDate = (thaiDate) => {
+    if (!thaiDate) return "";
+
+    const monthMap = {
+      "ม.ค.": "01",
+      "ก.พ.": "02",
+      "มี.ค.": "03",
+      "เม.ย.": "04",
+      "พ.ค.": "05",
+      "มิ.ย.": "06",
+      "ก.ค.": "07",
+      "ส.ค.": "08",
+      "ก.ย.": "09",
+      "ต.ค.": "10",
+      "พ.ย.": "11",
+      "ธ.ค.": "12",
+    };
+
+    const parts = thaiDate.split("-");
+    if (parts.length < 3) return "";
+
+    const day = parts[0].padStart(2, "0");
+    const month = monthMap[parts[1].trim()];
+    let year = parts[2].trim();
+
+    // ปีเป็น 25 → แปลงเป็น 2025 (สมมติว่า >= 50 เป็น 19xx, <50 เป็น 20xx)
+    if (year.length === 2) {
+      const yearNum = parseInt(year, 10);
+      year = yearNum < 50 ? `20${year}` : `19${year}`;
+    }
+
+    return `${year}-${month}-${day}`;
+  };
+
 
   return (
     <div className="rentinfo-container">
@@ -166,7 +204,11 @@ function RentInfo() {
 
           <label>
             วันเดินทาง :
-            <input type="date" />
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+            />
           </label>
 
           <label>
@@ -209,11 +251,11 @@ function RentInfo() {
                   <td>{b.vehicle}</td>
                   <td>{b.driver}</td>
                   <td>
-                    {b.startDate}&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+                    {b.startDate}&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;<br></br>
                     {Number(b.startTime).toFixed(2).padStart(5, "0")} น.
                   </td>
                   <td>
-                    {b.arrivalDate}&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+                    {b.arrivalDate}&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;<br></br>
                     {Number(b.arrivalTime).toFixed(2).padStart(5, "0")} น.
                   </td>
                   <td>{b.seats}</td>
