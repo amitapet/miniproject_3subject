@@ -10,6 +10,10 @@ function Rent() {
 
   const [stations, setStations] = useState([]);
   const [schedules, setSchedules] = useState([]);
+  const [bookedSeats, setBookedSeats] = useState({}); // เก็บจำนวนที่จองต่อ trip ID
+  const [reservedSeatsDB, setReservedSeatsDB] = useState({}); // เก็บจำนวนที่จองจาก DB
+  const [vehicleTypes, setVehicleTypes] = useState([]); // ประเภทรถที่มีในระบบ
+  const [currentPage, setCurrentPage] = useState(1);
   const [form, setForm] = useState({
     origin: { id: "", name: "" },
     destination: { id: "", name: "" },
@@ -17,8 +21,6 @@ function Rent() {
     date: "",
     seats: 1,
   });
-
-  const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10; // จำนวนแถวต่อหน้า
 
   useEffect(() => {
@@ -34,8 +36,53 @@ function Rent() {
         console.error("❌ โหลดข้อมูลสถานีไม่สำเร็จ:", error);
       }
     };
+
+    axios
+      .get("http://localhost:3000/vehicleTypes")
+      .then((res) => setVehicleTypes(res.data))
+      .catch((err) => console.error("❌ โหลดชนิดรถ 🚗", err));
+
+    const fetchReservedSeats = async () => {
+      try {
+        const res = await axios.get("http://localhost:3000/reservedSeats");
+        const mapped = {};
+        res.data.forEach((r) => {
+          mapped[r.TRIP_ID] = r.SEAT;
+        });
+        setReservedSeatsDB(mapped);
+      } catch (err) {
+        console.error("❌ โหลดจำนวนที่จองจาก DB ไม่สำเร็จ:", err);
+      }
+    };
+    fetchReservedSeats();
     fetchStations();
-  }, []);
+  }, [schedules]);
+
+  const formatThaiDate = (dateStr) => {
+    if (!dateStr) return "";
+
+    const months = [
+      "ม.ค.",
+      "ก.พ.",
+      "มี.ค.",
+      "เม.ย.",
+      "พ.ค.",
+      "มิ.ย.",
+      "ก.ค.",
+      "ส.ค.",
+      "ก.ย.",
+      "ต.ค.",
+      "พ.ย.",
+      "ธ.ค.",
+    ];
+
+    const [year, month, day] = dateStr.split("-");
+    const shortYear = year.slice(-2);
+    const monthName = months[parseInt(month) - 1];
+
+    // จะได้แบบ 05-ต.ค.-25
+    return `${day}-${monthName}-${shortYear}`;
+  };
 
   const handleStationChange = (e, field) => {
     const stationId = e.target.value;
@@ -56,11 +103,9 @@ function Rent() {
   const getArrivalTime = (timeout, duration = 30) => {
     const hour = Math.floor(timeout);
     const minute = Math.round((timeout - hour) * 60);
-
     const start = new Date();
     start.setHours(hour, minute);
     start.setMinutes(start.getMinutes() + duration);
-
     return `${start.getHours()}:${String(start.getMinutes()).padStart(
       2,
       "0"
@@ -76,46 +121,84 @@ function Rent() {
     try {
       const url = `http://localhost:3000/rentinfo/${form.origin.id}/${form.destination.id}`;
       const res = await axios.get(url);
-      setSchedules(res.data);
-      setCurrentPage(1); // กลับไปหน้าแรกเมื่อค้นหาใหม่
+
+      let filtered = res.data;
+
+      // filter ตามวันเดินทาง
+      if (form.date) {
+        filtered = filtered.filter((trip) => trip.DATE_TRIP === form.date);
+      }
+
+      // filter ตามจำนวนที่นั่ง
+      filtered = filtered.filter((trip) => {
+        const bookedSession = bookedSeats[trip.ID] || 0;
+        const bookedDB = reservedSeatsDB[trip.ID] || 0;
+        const seatsLeft = trip.SEAT - bookedDB - bookedSession;
+        return seatsLeft >= Number(form.seats);
+      });
+
+      // filter ตามประเภทรถ
+      if (form.vehicle && form.vehicle !== "ทุกประเภท") {
+        filtered = filtered.filter((trip) => trip.NAME === form.vehicle);
+      }
+
+      setSchedules(filtered);
+      setCurrentPage(1);
     } catch (error) {
       console.error("❌ โหลดข้อมูลรอบรถไม่สำเร็จ:", error);
       alert("เกิดข้อผิดพลาดขณะค้นหาข้อมูลรอบรถ");
     }
   };
 
-  // 🔹 คำนวณข้อมูลที่จะแสดงในหน้าปัจจุบัน
-  const indexOfLastRow = currentPage * rowsPerPage;
-  const indexOfFirstRow = indexOfLastRow - rowsPerPage;
-  const currentRows = schedules.slice(indexOfFirstRow, indexOfLastRow);
-  const totalPages = Math.ceil(schedules.length / rowsPerPage);
-
-  // เพิ่มฟังก์ชัน handleBooking
   const handleBooking = async (trip) => {
-    if (!form.date) {
-      alert("กรุณาเลือกวันเดินทางก่อนจอง");
-      return;
+    const bookedSession = bookedSeats[trip.ID] || 0;
+    const bookedDB = reservedSeatsDB[trip.ID] || 0;
+    const seatsLeft = trip.SEAT - bookedDB - bookedSession;
+
+    if (seatsLeft <= 0) {
+      alert("รอบนี้เต็มแล้ว");
+      return; // ❌ ไม่ทำงานหรอก ใช้ disabled={seatsLeft <= 0} แล้ว
     }
 
+    const seatsToBook = Number(form.seats);
+
+    if (seatsToBook > seatsLeft) {
+      alert(
+        `คุณเลือกจำนวนที่นั่งเกินที่เหลือ จำนวนที่เหลือคือ ${seatsLeft} ที่นั่ง`
+      );
+      return; // ❌ ไม่ส่ง DB
+    }
+
+    // เตรียมข้อมูลที่จะส่งไป backend
     try {
-      // เตรียมข้อมูลที่จะส่งไป backend
       const postData = {
         start: form.origin.id,
         stop: form.destination.id,
-        seat: form.seats,
+        seat: seatsToBook,
         cus_id: cus_id,
         route_id: trip.ID_ROUTE,
         trip_id: trip.ID,
       };
 
       const res = await axios.post("http://localhost:3000/rent", postData);
-
       alert(res.data.message);
+
+      // หลังจองสำเร็จ
+      setBookedSeats((prev) => ({
+        ...prev,
+        [trip.ID]: (prev[trip.ID] || 0) + seatsToBook,
+      }));
     } catch (err) {
       console.error("❌ จองไม่สำเร็จ:", err);
       alert("เกิดข้อผิดพลาดขณะจอง");
     }
   };
+
+  // 🔹 คำนวณข้อมูลที่จะแสดงในหน้าปัจจุบัน Pagination
+  const indexOfLastRow = currentPage * rowsPerPage;
+  const indexOfFirstRow = indexOfLastRow - rowsPerPage;
+  const currentRows = schedules.slice(indexOfFirstRow, indexOfLastRow);
+  const totalPages = Math.ceil(schedules.length / rowsPerPage);
 
   return (
     <div className="rent-container">
@@ -156,9 +239,12 @@ function Rent() {
           <label>
             ประเภทรถ :
             <select name="vehicle" value={form.vehicle} onChange={handleChange}>
-              <option>ทุกประเภท</option>
-              <option>รถบัส</option>
-              <option>รถตู้</option>
+              <option value="ทุกประเภท">ทุกประเภท</option>
+              {vehicleTypes.map((v, i) => (
+                <option key={i} value={v.NAME}>
+                  {v.NAME}
+                </option>
+              ))}
             </select>
           </label>
 
@@ -194,30 +280,37 @@ function Rent() {
               <th>วันที่</th>
               <th>เวลาออกรถ</th>
               <th>ประเภทรถ</th>
-              <th>จำนวนที่นั่ง</th>
+              <th>จำนวนที่นั่งเหลือ</th>
               <th>เวลาถึง (ประมาณ)</th>
               <th>การจัดการ</th>
             </tr>
           </thead>
           <tbody>
             {currentRows.length > 0 ? (
-              currentRows.map((trip) => (
-                <tr key={trip.ID}>
-                  <td>{trip.DATE_TRIP}</td>
-                  <td>{trip.TIMEOUT}</td>
-                  <td>{trip.NAME}</td>
-                  <td>{trip.SEAT}</td>
-                  <td>{getArrivalTime(trip.TIMEOUT)}</td>
-                  <td>
-                    <button
-                      className="book-btn"
-                      onClick={() => handleBooking(trip)}
-                    >
-                      จอง
-                    </button>
-                  </td>
-                </tr>
-              ))
+              currentRows.map((trip) => {
+                const bookedSession = bookedSeats[trip.ID] || 0;
+                const bookedDB = reservedSeatsDB[trip.ID] || 0;
+                const seatsLeft = trip.SEAT - bookedSession - bookedDB;
+
+                return (
+                  <tr key={trip.ID}>
+                    <td>{formatThaiDate(trip.DATE_TRIP)}</td>
+                    <td>{trip.TIMEOUT}</td>
+                    <td>{trip.NAME}</td>
+                    <td>{seatsLeft > 0 ? seatsLeft : 0}</td>
+                    <td>{getArrivalTime(trip.TIMEOUT)}</td>
+                    <td>
+                      <button
+                        className="book-btn"
+                        onClick={() => handleBooking(trip)}
+                        disabled={seatsLeft <= 0}
+                      >
+                        จอง
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })
             ) : (
               <tr>
                 <td colSpan="6" style={{ textAlign: "center" }}>
@@ -228,7 +321,6 @@ function Rent() {
           </tbody>
         </table>
 
-        {/* 🔹 Pagination */}
         {schedules.length > rowsPerPage && (
           <div className="pagination">
             <button

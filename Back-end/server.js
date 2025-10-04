@@ -174,7 +174,7 @@ app.get("/rentinfo/:start/:stop", async (req, res) => {
     const stop = req.params.stop;
 
     const result = await connection.execute(
-      `select t.id,t.ID_ROUTE, to_char(t.DATE_TRIP,'dd/ mon/yy') as DATE_TRIP ,t.timeout ,t.ID_CAR, tcar.name, car.seat 
+      `select t.id,t.ID_ROUTE, to_char(t.DATE_TRIP,'yyyy-mm-dd') as DATE_TRIP ,t.timeout ,t.ID_CAR, tcar.name, car.seat 
         from trip t
         join car on car.id = t.ID_CAR
         join TYPE_CAR tcar on tcar.id = car.ID_TYPECAR
@@ -281,6 +281,50 @@ app.get("/reserve/:cus_id", async (req, res) => {
     if (connection) await connection.close();
   }
 });
+
+// ส่งจำนวนที่จองต่อ trip_id
+app.get("/reservedSeats", async (req, res) => {
+  let connection;
+  try {
+    connection = await oracledb.getConnection(dbConfig);
+
+    const result = await connection.execute(
+      `select s.trip_id , sum(s.seat) as seat
+        from (select * from RESERVE 
+        where STATUS ='-') s
+        GROUP BY s.trip_id`,
+      [],
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    res.json(result.rows); // [{ TRIP_ID: 1, SEAT: 3 }, ...]
+  } catch (err) {
+    console.error("❌ GET /reservedSeats error:", err);
+    res.status(500).json({ error: "DB Error", details: err.message });
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+
+// ดึงประเภทของรถทั้งหมด
+app.get("/vehicleTypes", async (req, res) => {
+  let connection;
+  try {
+    connection = await oracledb.getConnection(dbConfig);
+    const result = await connection.execute(
+      `SELECT DISTINCT name FROM TYPE_CAR ORDER BY name`,
+      {},
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+    res.json(result.rows); // [{NAME:"รถบัส"}, {NAME:"รถตู้"}, ...]
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error fetching vehicle types");
+  } finally {
+    if (connection) await connection.close();
+  }
+});
+
 //END RESERVE
 
 //CANCEL RESERVE

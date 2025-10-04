@@ -29,19 +29,19 @@ function Workschedule() {
 
   // Option lists
   const [routeOptions, setRouteOptions] = useState([]);
-  const [dateOptions, setDateOptions] = useState([]);
   const [timeOptions, setTimeOptions] = useState([]);
   const [carTypeOptions, setCarTypeOptions] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await axios.get(`http://localhost:3000/assignment/${empId}`);
+        const res = await axios.get(
+          `http://localhost:3000/assignment/${empId}`
+        );
         setSchedules(res.data);
 
         // สร้าง option lists แบบ unique
         setRouteOptions([...new Set(res.data.map((s) => s.NAME_ROUTE))]);
-        setDateOptions([...new Set(res.data.map((s) => s.TRIPDATE))]);
         setTimeOptions([...new Set(res.data.map((s) => s.TIMEOUT))]);
         setCarTypeOptions([...new Set(res.data.map((s) => s.NAME))]);
       } catch (err) {
@@ -54,9 +54,12 @@ function Workschedule() {
 
   // กรองข้อมูลตาม filter (เฉพาะเมื่อกดค้นหา)
   const filteredSchedules = schedules.filter((s) => {
+    const [day, month, year] = s.TRIPDATE.split("/");
+    const tripDateISO = `${year}-${month}-${day}`;
+
     return (
       (!routeFilter || s.NAME_ROUTE === routeFilter) &&
-      (!dateFilter || s.TRIPDATE === dateFilter) &&
+      (!dateFilter || tripDateISO === dateFilter) &&
       (!timeFilter || s.TIMEOUT === timeFilter) &&
       (!carTypeFilter || s.NAME === carTypeFilter)
     );
@@ -95,17 +98,11 @@ function Workschedule() {
 
           <label>
             วันที่ : <br />
-            <select
+            <input
+              type="date"
               value={dateSelect}
               onChange={(e) => setDateSelect(e.target.value)}
-            >
-              <option value="">ทั้งหมด</option>
-              {dateOptions.map((date, idx) => (
-                <option key={idx} value={date}>
-                  {date}
-                </option>
-              ))}
-            </select>
+            />
           </label>
 
           <label>
