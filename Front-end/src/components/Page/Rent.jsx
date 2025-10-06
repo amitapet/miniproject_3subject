@@ -119,7 +119,7 @@ function Rent() {
     }
 
     try {
-      const url = `http://localhost:3000/rentinfo/${form.origin.id}/${form.destination.id}`;
+      const url = `http://localhost:3000/rentinfo/${form.origin.id}/${form.destination.id}/${cus_id}`;
       const res = await axios.get(url);
 
       let filtered = res.data;
@@ -199,6 +199,26 @@ function Rent() {
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
   const currentRows = schedules.slice(indexOfFirstRow, indexOfLastRow);
   const totalPages = Math.ceil(schedules.length / rowsPerPage);
+
+  //ทำให้เวลาสวย//
+  const formatTime = (time) => {
+    if (!time) return "";
+
+    let t = String(time);
+
+    // แยกชั่วโมงกับนาที
+    let [hour, minute] = t.split(".");
+
+    // ถ้าไม่มีนาที ให้เป็น "00"
+    if (!minute) minute = "00";
+
+    // เติม 0 ด้านหน้าให้ครบ 2 หลัก
+    hour = hour.padStart(2, "0");
+    minute = minute.padEnd(2, "0");
+
+    return `${hour}:${minute} น.`;
+  };
+  //ทำให้เวลาสวย//
 
   return (
     <div className="rent-container">
@@ -295,7 +315,7 @@ function Rent() {
                 return (
                   <tr key={trip.ID}>
                     <td>{formatThaiDate(trip.DATE_TRIP)}</td>
-                    <td>{trip.TIMEOUT}</td>
+                    <td>{formatTime(trip.TIMEOUT)}</td>
                     <td>{trip.NAME}</td>
                     <td>{seatsLeft > 0 ? seatsLeft : 0}</td>
                     <td>{getArrivalTime(trip.TIMEOUT)}</td>

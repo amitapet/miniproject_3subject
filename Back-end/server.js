@@ -166,12 +166,13 @@ app.get("/rstation", async (req, res) => {
   }
 });
 
-app.get("/rentinfo/:start/:stop", async (req, res) => {
+app.get("/rentinfo/:start/:stop/:cus_id", async (req, res) => {
   let connection;
   try {
     connection = await oracledb.getConnection(dbConfig);
     const start = req.params.start;
     const stop = req.params.stop;
+    const cus_id = req.params.cus_id;
 
     const result = await connection.execute(
       `select t.id,t.ID_ROUTE, to_char(t.DATE_TRIP,'yyyy-mm-dd') as DATE_TRIP ,t.timeout ,t.ID_CAR, tcar.name, car.seat 
@@ -179,20 +180,20 @@ app.get("/rentinfo/:start/:stop", async (req, res) => {
         join car on car.id = t.ID_CAR
         join TYPE_CAR tcar on tcar.id = car.ID_TYPECAR
         join ROUTE_STATIONS rs on rs.ID_ROUTE = t.ID_ROUTE
-        where rs.STOPS_ID = :p_start
+        where rs.STOPS_ID = :p_start and t.date_trip >= (sysdate - 1)
         group by t.id,t.ID_ROUTE, t.date_trip ,t.timeout ,t.ID_CAR, tcar.name, car.seat
         having t.id in (
           select t.id
           from trip t
           join ROUTE_STATIONS rs on rs.ID_ROUTE = t.ID_ROUTE
-          where rs.STOPS_ID = :p_stop)`,
-      { p_start: start, p_stop: stop },
+          where rs.STOPS_ID = :p_stop) and t.id not in (select trip_id from RESERVE where cus_id= :cus_id)`,
+      { p_start: start, p_stop: stop, cus_id },
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
 
     res.json(result.rows);
   } catch (err) {
-    console.error("❌ GET /rentinfo/:start/:stop error:", err);
+    console.error("❌ GET /rentinfo/:start/:stop/:cus_id error:", err);
     res.status(500).json({ error: "DB Error", details: err.message });
   } finally {
     if (connection) await connection.close();

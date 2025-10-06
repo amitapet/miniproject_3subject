@@ -94,6 +94,26 @@ function AssignmentDetail() {
     }
   };
 
+  //ทำให้เวลาสวย//
+  const formatTime = (time) => {
+    if (!time) return "";
+
+    let t = String(time);
+
+    // แยกชั่วโมงกับนาที
+    let [hour, minute] = t.split(".");
+
+    // ถ้าไม่มีนาที ให้เป็น "00"
+    if (!minute) minute = "00";
+
+    // เติม 0 ด้านหน้าให้ครบ 2 หลัก
+    hour = hour.padStart(2, "0");
+    minute = minute.padEnd(2, "0");
+
+    return `${hour}:${minute}`;
+  };
+  //ทำให้เวลาสวย//
+
   const filteredPassengers = passengers.filter((p) => {
     return (
       (!pickupFilter || p.PICKUP_NAME === pickupFilter) &&
@@ -120,7 +140,7 @@ function AssignmentDetail() {
             <p>รอบที่ {schedule.ID}</p>
             <p>เส้นทาง : {schedule.NAME_ROUTE}</p>
             <p>วันที่ {schedule.TRIPDATE}</p>
-            <p>เวลารถออก : {schedule.TIMEOUT} น.</p>
+            <p>เวลารถออก : {formatTime(schedule.TIMEOUT)} น.</p>
           </div>
           <div className="job-extra">
             <p>ทะเบียนรถ: {schedule.ID_CAR}</p>

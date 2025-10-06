@@ -52,6 +52,26 @@ function Assignment() {
     fetchData();
   }, [empId]);
 
+    //ทำให้เวลาสวย//
+const formatTime = (time) => {
+  if (!time) return "";
+
+  let t = String(time);
+
+  // แยกชั่วโมงกับนาที
+  let [hour, minute] = t.split(".");
+
+  // ถ้าไม่มีนาที ให้เป็น "00"
+  if (!minute) minute = "00";
+
+  // เติม 0 ด้านหน้าให้ครบ 2 หลัก
+  hour = hour.padStart(2, "0");
+  minute = minute.padEnd(2, "0");
+
+  return `${hour}:${minute}`;
+};
+//ทำให้เวลาสวย//
+
   const filteredSchedules = schedules.filter((s) => {
     const [day, month, year] = s.TRIPDATE.split("/");
     const tripDateISO = `${year}-${month}-${day}`;
@@ -155,7 +175,7 @@ function Assignment() {
               <div className="schedule-info">
                 <div>เส้นทาง : {s.NAME_ROUTE} </div>
                 <div>
-                  รอบที่ {s.ID} วันที่ {s.TRIPDATE} | ออกเวลา {s.TIMEOUT} น.
+                  รอบที่ {s.ID} วันที่ {s.TRIPDATE} | ออกเวลา {formatTime(s.TIMEOUT)} น.
                 </div>
                 <div>
                   ทะเบียนรถ: {s.ID_CAR} | ประเภทรถ: {s.NAME}

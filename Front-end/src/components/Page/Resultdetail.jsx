@@ -118,6 +118,26 @@ function Resultdetail() {
     stops.map((s) => s.STATION_TIME)
   );
 
+  //ทำให้เวลาสวย//
+  const formatTime = (time) => {
+    if (!time) return "";
+
+    let t = String(time);
+
+    // แยกชั่วโมงกับนาที
+    let [hour, minute] = t.split(".");
+
+    // ถ้าไม่มีนาที ให้เป็น "00"
+    if (!minute) minute = "00";
+
+    // เติม 0 ด้านหน้าให้ครบ 2 หลัก
+    hour = hour.padStart(2, "0");
+    minute = minute.padEnd(2, "0");
+
+    return `${hour}:${minute}`;
+  };
+  //ทำให้เวลาสวย//
+
   return (
     <>
       <Sidebar />
@@ -132,7 +152,7 @@ function Resultdetail() {
             <p>
               รถ: {tripInfo.NAME} &nbsp; ทะเบียน: {tripInfo.ID_CAR}
             </p>
-            <p>เวลาเดินทาง: {tripInfo.TIMEOUT}</p>
+            <p>เวลาเดินทาง: {formatTime(tripInfo.TIMEOUT)}</p>
             <p>มีผู้ใช้บริการจองทั้งหมด : {tripInfo.SEAT} ที่นั่ง</p>
           </div>
           <div className="job-extra">
